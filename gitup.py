@@ -63,11 +63,11 @@ def get_tail_name(path):
     return os.path.split(path)[1]
 
 def update_repository(repo_path, repo_name):
-    """Update a single git project by pulling from the remote repository."""
+    """Update a single git repository by pulling from the remote."""
     out(1, "{}{}{}:".format(ansi['bold'], repo_name, ansi['reset']))
     
-    os.chdir(repo_path) # cd into the project folder so git commands target the
-                        # correct repo
+    os.chdir(repo_path) # cd into our folder so git commands target the correct
+                        # repo
     
     try:
         dry_fetch = exec_shell("git fetch --dry-run") # check if there is
@@ -101,13 +101,13 @@ def update_repository(repo_path, repo_name):
         
         else:
             out(2, """{}Warning:{} You have uncommitted changes in this
-                    project!""".format(ansi['red'], ansi['reset']))
+                    repository!""".format(ansi['red'], ansi['reset']))
             out(2, "Ignoring.")
 
 def update_directory(dir_path, dir_name, is_bookmark=False):
     """First, make sure the specified object is actually a directory, then
-    determine whether the directory is a git project on its own or a directory
-    of git projects. If the former, update the single repository; if the
+    determine whether the directory is a git repo on its own or a directory
+    of git repositories. If the former, update the single repository; if the
     latter, update all repositories contained within."""
     if is_bookmark:
         dir_source = "Bookmark" # where did we get this directory from?
@@ -247,19 +247,18 @@ def list_bookmarks():
 
 def main():
     """Parse arguments and then call the appropriate function(s)."""
-    parser = argparse.ArgumentParser(description="""Easily and intelligently
-            pull to multiple git projects at once.""", epilog="""Both relative
-            and absolute paths are accepted by all arguments. Questions?
-            Comments? Email the author at {}.""".format(__email__),
-            add_help=False)
+    parser = argparse.ArgumentParser(description="""Easily pull to multiple git
+            repositories at once.""", epilog="""Both relative and absolute
+            paths are accepted by all arguments. Questions? Comments? Email the
+            author at {}.""".format(__email__), add_help=False)
     
     group_u = parser.add_argument_group("updating repositories")
     group_b = parser.add_argument_group("bookmarking")
     group_m = parser.add_argument_group("miscellaneous")
     
     group_u.add_argument('directories_to_update', nargs="*", metavar="path",
-            help="""update all projects in this directory (or the directory
-            itself, if it is a project)""")
+            help="""update all repositories in this directory (or the directory
+            itself, if it is a repo)""")
     
     group_u.add_argument('-u', '--update', action="store_true", help="""update
             all bookmarks (default behavior when called without arguments)""")

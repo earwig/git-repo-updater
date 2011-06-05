@@ -1,8 +1,8 @@
 __gitup__ (the _git-repo-updater_)
 
 gitup is a tool designed to pull to a large number of git repositories at once.
-It is smart enough to ignore projects with dirty working directories, and
-provides a great way to get everything up-to-date for those short periods of
+It is smart enough to ignore repos with dirty working directories, and provides
+a (hopefully) great way to get everything up-to-date for those short periods of
 internet access between long periods of none.
 
 gitup works on both OS X and Linux. You should have the latest version of git
@@ -27,25 +27,25 @@ Finally, simply delete the `git-repo-updater` directory, and you're done!
 
 # Usage
 
-There are two ways to update projects: you can pass them as command arguments,
+There are two ways to update repos: you can pass them as command arguments,
 or save them as "bookmarks".
 
 For example:
 
-    gitup ~/projects/foo ~/projects/bar ~/projects/baz
+    gitup ~/repos/foo ~/repos/bar ~/repos/baz
 
 ...will automatically pull to the `foo`, `bar`, and `baz` git repositories if
 their working directories are clean (to avoid merge conflicts). Additionally,
 you can just type:
 
-    gitup ~/projects
+    gitup ~/repos
 
 ...to automatically update all git repositories in that directory.
 
 To add a bookmark (or bookmarks), either of these will work:
 
-    gitup --add ~/projects/foo ~/projects/bar ~/projects/baz
-    gitup --add ~/projects
+    gitup --add ~/repos/foo ~/repos/bar ~/repos/baz
+    gitup --add ~/repos
 
 Then, to update (pull to) all of your bookmarks, just run gitup without args:
 
@@ -53,7 +53,7 @@ Then, to update (pull to) all of your bookmarks, just run gitup without args:
 
 Deleting a bookmark is as easy as adding one:
 
-    gitup --delete ~/projects
+    gitup --delete ~/repos
 
 Want to view your current bookmarks? Simple:
 
@@ -61,12 +61,12 @@ Want to view your current bookmarks? Simple:
 
 You can mix and match bookmarks and command arguments:
 
-    gitup --add ~/projects/foo ~/projects/bar
-    gitup ~/projects/baz            # update 'baz' only
-    gitup                           # update 'foo' and 'bar' only
-    gitup ~/projects/baz --update   # update all three!
+    gitup --add ~/repos/foo ~/repos/bar
+    gitup ~/repos/baz            # update 'baz' only
+    gitup                        # update 'foo' and 'bar' only
+    gitup ~/repos/baz --update   # update all three!
 
-Want to update all git projects in your current directory?
+Want to update all git repositories in your current directory?
 
     gitup .
 
@@ -74,5 +74,5 @@ For a list of all command arguments and abbreviations:
 
     gitup --help
 
-Finally, all paths can be either absolute (e.g. /path/to/project) or relative
-(e.g. ../my/project).
+Finally, all paths can be either absolute (e.g. /path/to/repo) or relative
+(e.g. ../my/repo).

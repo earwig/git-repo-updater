@@ -12,7 +12,7 @@ if os.path.exists("gitup"):
 else:
     os.rename("gitup.py", "gitup")
 
-desc = "Easily and intelligently pull to multiple git projects at once."
+desc = "Easily pull to multiple git repositories at once."
 
 with open('README.md') as file:
     long_desc = file.read()
@@ -27,7 +27,7 @@ try:
         description = desc,
         long_description = long_desc,
         license = "MIT License",
-        keywords = "git project repository pull update",
+        keywords = "git repository pull update",
         url = "http://github.com/earwig/git-repo-updater",
         classifiers = ["Environment :: Console",
         "Intended Audience :: Developers",
