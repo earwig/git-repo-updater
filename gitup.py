@@ -55,13 +55,6 @@ def directory_is_git_repo(directory_path):
             return True
     return False
 
-def get_tail_name(path):
-    """Return the name of the right-most directory in a path. Uses
-    os.path.split, but corrects for an error when the path ends with a /."""
-    if path.endswith("/"):
-        return os.path.split(path[:-1])[1]
-    return os.path.split(path)[1]
-
 def update_repository(repo_path, repo_name):
     """Update a single git repository by pulling from the remote."""
     out(1, "{}{}{}:".format(ansi['bold'], repo_name, ansi['reset']))
@@ -164,7 +157,8 @@ def update_directories(paths):
     """Update a list of directories supplied by command arguments."""
     for path in paths:
         path = os.path.abspath(path) # convert relative to absolute path
-        update_directory(path, get_tail_name(path), is_bookmark=False)
+        path_name = os.path.split(path)[1] # directory name; "x" in /path/to/x/
+        update_directory(path, path_name, is_bookmark=False)
 
 def update_bookmarks():
     """Loop through and update all bookmarks."""
@@ -207,7 +201,8 @@ def add_bookmarks(paths):
         if config.has_option("bookmarks", path):
             out(1, "'{}' is already bookmarked.".format(path))
         else:
-            config.set("bookmarks", path, get_tail_name(path))
+            path_name = os.path.split(path)[1]
+            config.set("bookmarks", path, path_name)
             out(1, "{}{}{}".format(ansi['bold'], path, ansi['reset']))
     
     save_config_file(config)
