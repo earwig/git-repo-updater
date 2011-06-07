@@ -150,6 +150,7 @@ def update_directory(dir_path, dir_name, is_bookmark=False):
         out(0, "{} '{}{}{}' contains {} git {}:".format(dir_source,
                 ansi['bold'], dir_path, ansi['reset'], repo_count, pluralize))
 
+        repositories.sort() # go alphabetically instead of randomly
         for repo_path, repo_name in repositories:
             update_repository(repo_path, repo_name)
 
