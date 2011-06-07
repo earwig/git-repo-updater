@@ -64,7 +64,8 @@ def directory_is_git_repo(directory_path):
 
 def update_repository(repo_path, repo_name):
     """Update a single git repository by pulling from the remote."""
-    out(1, "{}{}{}:".format(ansi['bold'], repo_name, ansi['reset']))
+    bold_name = style(repo_name, "bold")
+    out(1, "{}:".format(bold_name))
     
     os.chdir(repo_path) # cd into our folder so git commands target the correct
                         # repo
@@ -74,34 +75,36 @@ def update_repository(repo_path, repo_name):
                                                       # anything to pull, but
                                                       # don't do it yet
     except subprocess.CalledProcessError:
-        out(2, """{}Error:{} cannot fetch; do you have a remote repository
-                configured correctly?""".format(ansi['red'], ansi['reset']))
+        error_msg = style("Error:", "red")
+        out(2, """{} cannot fetch; do you have a remote repository configured
+                correctly?""".format(error_msg))
         return
     
     try:
-        last = exec_shell("git log -n 1 --pretty=\"%ar\"") # last commit time
+        last_commit = exec_shell("git log -n 1 --pretty=\"%ar\"")
     except subprocess.CalledProcessError:
-        last = "never" # couldn't get a log, so no commits
+        last_commit = "never" # couldn't get a log, so no commits
     
     if not dry_fetch: # no new changes to pull
-        out(2, "{}No new changes.{} Last commit was {}.".format(ansi['blue'],
-                ansi['reset'], last))
+        nochanges_msg = style("No new changes.", "blue")
+        out(2, "{} Last commit was {}.".format(nochanges_msg, last_commit))
         
     else: # stuff has happened!
         out(2, "There are new changes upstream...")
         status = exec_shell("git status")
     
         if status.endswith("nothing to commit (working directory clean)"):
-            out(2, "{}Pulling new changes...{}".format(ansi['green'],
-                    ansi['reset']))
+            
+            out(2, style("Pulling new changes...", "green"))
             result = exec_shell("git pull")
             out(2, "The following changes have been made since {}:".format(
-                    last))
+                    last_commit))
             print result
         
         else:
-            out(2, """{}Warning:{} You have uncommitted changes in this
-                    repository!""".format(ansi['red'], ansi['reset']))
+            warning_msg = style("Warning:", "red")
+            out(2, "{} You have uncommitted changes in this repository!".format(
+                    warning_msg))
             out(2, "Ignoring.")
 
 def update_directory(dir_path, dir_name, is_bookmark=False):
@@ -110,16 +113,18 @@ def update_directory(dir_path, dir_name, is_bookmark=False):
     of git repositories. If the former, update the single repository; if the
     latter, update all repositories contained within."""
     if is_bookmark:
-        dir_source = "Bookmark" # where did we get this directory from?
+        dir_type = "bookmark" # where did we get this directory from?
     else:
-        dir_source = "Directory"
+        dir_type = "directory"
+    
+    error = style("Error:", "red")
+    bold_path_name = style(dir_path, "bold")
     
     try:
         os.listdir(dir_path) # test if we can access this directory
     except OSError:
-        out(0, "{}Error:{} cannot enter {} '{}{}{}'; does it exist?".format(
-        ansi['red'], ansi['reset'], dir_source.lower(), ansi['bold'], dir_path,
-        ansi['reset']))
+        out(0, "{} cannot enter {} '{}'; does it exist?".format(error,
+                dir_type, bold_path_name))
         return
     
     if not os.path.isdir(dir_path):
@@ -128,14 +133,13 @@ def update_directory(dir_path, dir_name, is_bookmark=False):
         else:
             error_message = "does not exist"
             
-        out(0, "{}Error{}: {} '{}{}{}' {}!".format(ansi['red'], ansi['reset'],
-                dir_source, ansi['bold'], dir_path, ansi['reset'],
+        out(0, "{} {} '{}' {}!".format(error, dir_type, bold_path_name,
                 error_message))
         return
     
     if directory_is_git_repo(dir_path):
-        out(0, "{} '{}{}{}' is a git repository:".format(dir_source,
-                ansi['bold'], dir_path, ansi['reset']))
+        out(0, "{} '{}' is a git repository:".format(dir_type.capitalize(),
+                bold_path_name))
         update_repository(dir_path, dir_name)
         
     else:
@@ -148,14 +152,14 @@ def update_directory(dir_path, dir_name, is_bookmark=False):
             if directory_is_git_repo(repo_path): # filter out non-repositories
                 repositories.append((repo_path, repo_name))
         
-        repo_count = len(repositories)
-        if repo_count == 1:
-            pluralize = "repository"
+        num_of_repos = len(repositories)
+        if num_of_repos == 1:
+            pluralized = "repository"
         else:
-            pluralize = "repositories"
+            pluralized = "repositories"
             
-        out(0, "{} '{}{}{}' contains {} git {}:".format(dir_source,
-                ansi['bold'], dir_path, ansi['reset'], repo_count, pluralize))
+        out(0, "{} '{}' contains {} git {}:".format(dir_type.capitalize(),
+                bold_path_name, num_of_repos, pluralized))
 
         repositories.sort() # go alphabetically instead of randomly
         for repo_path, repo_name in repositories:
@@ -203,7 +207,8 @@ def add_bookmarks(paths):
     if not config.has_section("bookmarks"):
         config.add_section("bookmarks")
     
-    out(0, "{}Added bookmarks:{}".format(ansi['yellow'], ansi['reset']))
+    out(0, style("Added bookmarks:", "yellow"))
+    
     for path in paths:
         path = os.path.abspath(path) # convert relative to absolute path
         if config.has_option("bookmarks", path):
@@ -211,7 +216,7 @@ def add_bookmarks(paths):
         else:
             path_name = os.path.split(path)[1]
             config.set("bookmarks", path, path_name)
-            out(1, "{}{}{}".format(ansi['bold'], path, ansi['reset']))
+            out(1, style(path, "bold"))
     
     save_config_file(config)
 
@@ -220,12 +225,12 @@ def delete_bookmarks(paths):
     config = load_config_file()
     
     if config.has_section("bookmarks"):
-        out(0, "{}Deleted bookmarks:{}".format(ansi['yellow'], ansi['reset']))
+        out(0, style("Deleted bookmarks:", "yellow"))
         for path in paths:
             path = os.path.abspath(path) # convert relative to absolute path
             config_was_changed = config.remove_option("bookmarks", path)
             if config_was_changed:
-                out(1, "{}{}{}".format(ansi['bold'], path, ansi['reset']))
+                out(1, style(path, "bold"))
             else:
                 out(1, "'{}' is not bookmarked.".format(path))
         save_config_file(config)
@@ -242,7 +247,7 @@ def list_bookmarks():
         bookmarks = []
     
     if bookmarks:
-        out(0, "{}Current bookmarks:{}".format(ansi['yellow'], ansi['reset']))
+        out(0, style("Current bookmarks:", "yellow"))
         for bookmark_path, bookmark_name in bookmarks:
             out(1, bookmark_path)
     else:
@@ -284,7 +289,7 @@ def main():
     
     args = parser.parse_args()
     
-    print "{}gitup{}: the git-repo-updater".format(ansi['bold'], ansi['reset'])
+    print "{}: the git-repo-updater".format(style("gitup", "bold"))
     
     if args.bookmarks_to_add:
         add_bookmarks(args.bookmarks_to_add)
