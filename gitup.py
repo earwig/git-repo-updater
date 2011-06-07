@@ -20,15 +20,6 @@ __email__ = "ben.kurtovic@verizon.net"
 
 config_filename = os.path.join(os.path.expanduser("~"), ".gitup")
 
-ansi = { # ANSI escape codes to make terminal output colorful
-    "reset": "\x1b[0m",
-    "bold": "\x1b[1m",
-    "red": "\x1b[1m\x1b[31m",
-    "green": "\x1b[1m\x1b[32m",
-    "yellow": "\x1b[1m\x1b[33m",
-    "blue": "\x1b[1m\x1b[34m",
-}
-
 def out(indent, msg):
     """Print a message at a given indentation level."""
     width = 4 # amount to indent at each level
@@ -38,6 +29,22 @@ def out(indent, msg):
         spacing = " " * width * indent
     msg = re.sub("\s+", " ", msg) # collapse multiple spaces into one
     print spacing + msg
+
+def style(text, effect):
+    """Give a text string a certain effect, such as boldness, or a color."""
+    ansi = { # ANSI escape codes to make terminal output fancy
+        "reset": "\x1b[0m",
+        "bold": "\x1b[1m",
+        "red": "\x1b[1m\x1b[31m",
+        "green": "\x1b[1m\x1b[32m",
+        "yellow": "\x1b[1m\x1b[33m",
+        "blue": "\x1b[1m\x1b[34m",
+    }
+    
+    try: # pad text with effect, unless effect does not exist
+        return "{}{}{}".format(ansi[effect], text, ansi['reset'])
+    except KeyError:
+        return text
 
 def exec_shell(command):
     """Execute a shell command and get the output."""
