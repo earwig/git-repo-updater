@@ -20,17 +20,14 @@ __email__ = "ben.kurtovic@verizon.net"
 
 config_filename = os.path.join(os.path.expanduser("~"), ".gitup")
 
-def out(indent, msg):
-    """Print a message at a given indentation level."""
-    width = 4 # amount to indent at each level
-    if indent == 0:
-        spacing = "\n"
-    else:
-        spacing = " " * width * indent
-    msg = re.sub("\s+", " ", msg) # collapse multiple spaces into one
-    print spacing + msg
+# Text formatting functions
+bold = lambda t: style_text(t, "bold")
+red = lambda t: style_text(t, "red")
+green = lambda t: style_text(t, "green")
+yellow = lambda t: style_text(t, "yellow")
+blue = lambda t: style_text(t, "blue")
 
-def style(text, effect):
+def style_text(text, effect):
     """Give a text string a certain effect, such as boldness, or a color."""
     ansi = { # ANSI escape codes to make terminal output fancy
         "reset": "\x1b[0m",
@@ -45,6 +42,16 @@ def style(text, effect):
         return "{}{}{}".format(ansi[effect], text, ansi['reset'])
     except KeyError:
         return text
+
+def out(indent, msg):
+    """Print a message at a given indentation level."""
+    width = 4 # amount to indent at each level
+    if indent == 0:
+        spacing = "\n"
+    else:
+        spacing = " " * width * indent
+    msg = re.sub("\s+", " ", msg) # collapse multiple spaces into one
+    print spacing + msg
 
 def exec_shell(command):
     """Execute a shell command and get the output."""
@@ -64,8 +71,7 @@ def directory_is_git_repo(directory_path):
 
 def update_repository(repo_path, repo_name):
     """Update a single git repository by pulling from the remote."""
-    bold_name = style(repo_name, "bold")
-    out(1, "{}:".format(bold_name))
+    out(1, bold(repo_name) + ":")
     
     os.chdir(repo_path) # cd into our folder so git commands target the correct
                         # repo
@@ -75,9 +81,8 @@ def update_repository(repo_path, repo_name):
                                                       # anything to pull, but
                                                       # don't do it yet
     except subprocess.CalledProcessError:
-        error_msg = style("Error:", "red")
-        out(2, """{} cannot fetch; do you have a remote repository configured
-                correctly?""".format(error_msg))
+        out(2, red("Error: ") + "cannot fetch; do you have a remote " +
+                 "repository configured correctly?")
         return
     
     try:
@@ -86,24 +91,23 @@ def update_repository(repo_path, repo_name):
         last_commit = "never" # couldn't get a log, so no commits
     
     if not dry_fetch: # no new changes to pull
-        nochanges_msg = style("No new changes.", "blue")
-        out(2, "{} Last commit was {}.".format(nochanges_msg, last_commit))
+        out(2, blue("No new changes.") + " Last commit was {}.".format(
+                last_commit))
         
     else: # stuff has happened!
         out(2, "There are new changes upstream...")
         status = exec_shell("git status")
     
         if status.endswith("nothing to commit (working directory clean)"):
-            out(2, style("Pulling new changes...", "green"))
+            out(2, green("Pulling new changes..."))
             result = exec_shell("git pull")
             out(2, "The following changes have been made since {}:".format(
                     last_commit))
             print result
         
         else:
-            warning_msg = style("Warning:", "red")
-            out(2, "{} You have uncommitted changes in this repository!".format(
-                    warning_msg))
+            out(2, red("Warning: ") + "you have uncommitted changes in this " +
+                    "repository!")
             out(2, "Ignoring.")
 
 def update_directory(dir_path, dir_name, is_bookmark=False):
@@ -116,29 +120,24 @@ def update_directory(dir_path, dir_name, is_bookmark=False):
     else:
         dir_type = "directory"
     
-    error = style("Error:", "red")
-    bold_path_name = style(dir_path, "bold")
+    dir_long_name = "{} '{}'".format(dir_type, bold(dir_path))
     
     try:
         os.listdir(dir_path) # test if we can access this directory
     except OSError:
-        out(0, "{} cannot enter {} '{}'; does it exist?".format(error,
-                dir_type, bold_path_name))
+        out(0, red("Error: ") + "cannot enter {}; does it exist?".format(
+                dir_long_name))
         return
     
     if not os.path.isdir(dir_path):
         if os.path.exists(dir_path):
-            error_message = "is not a directory"
+            out(0, red("Error: ") + dir_long_name + " is not a directory!")
         else:
-            error_message = "does not exist"
-            
-        out(0, "{} {} '{}' {}!".format(error, dir_type, bold_path_name,
-                error_message))
+            out(0, red("Error: ") + dir_long_name + " does not exist!")
         return
     
     if directory_is_git_repo(dir_path):
-        out(0, "{} '{}' is a git repository:".format(dir_type.capitalize(),
-                bold_path_name))
+        out(0, dir_long_name.capitalize() + " is a git repository:")
         update_repository(dir_path, dir_name)
         
     else:
@@ -153,13 +152,11 @@ def update_directory(dir_path, dir_name, is_bookmark=False):
         
         num_of_repos = len(repositories)
         if num_of_repos == 1:
-            pluralized = "repository"
+            out(0, dir_long_name.capitalize() + " contains 1 git repository:")
         else:
-            pluralized = "repositories"
-            
-        out(0, "{} '{}' contains {} git {}:".format(dir_type.capitalize(),
-                bold_path_name, num_of_repos, pluralized))
-
+            out(0, dir_long_name.capitalize() +
+                    " contains {} git repositories:".format(num_of_repos))
+        
         repositories.sort() # go alphabetically instead of randomly
         for repo_path, repo_name in repositories:
             update_repository(repo_path, repo_name)
@@ -182,8 +179,8 @@ def update_bookmarks():
         for bookmark_path, bookmark_name in bookmarks:
             update_directory(bookmark_path, bookmark_name, is_bookmark=True)
     else:
-        out(0, """You don't have any bookmarks configured! Get help with
-                'gitup -h'.""")
+        out(0, "You don't have any bookmarks configured! Get help with " +
+                "'gitup -h'.")
 
 def load_config_file():
     """Read the file storing our config options from config_filename and return
@@ -206,7 +203,7 @@ def add_bookmarks(paths):
     if not config.has_section("bookmarks"):
         config.add_section("bookmarks")
     
-    out(0, style("Added bookmarks:", "yellow"))
+    out(0, yellow("Added bookmarks:"))
     
     for path in paths:
         path = os.path.abspath(path) # convert relative to absolute path
@@ -215,7 +212,7 @@ def add_bookmarks(paths):
         else:
             path_name = os.path.split(path)[1]
             config.set("bookmarks", path, path_name)
-            out(1, style(path, "bold"))
+            out(1, bold(path))
     
     save_config_file(config)
 
@@ -224,12 +221,12 @@ def delete_bookmarks(paths):
     config = load_config_file()
     
     if config.has_section("bookmarks"):
-        out(0, style("Deleted bookmarks:", "yellow"))
+        out(0, yellow("Deleted bookmarks:"))
         for path in paths:
             path = os.path.abspath(path) # convert relative to absolute path
             config_was_changed = config.remove_option("bookmarks", path)
             if config_was_changed:
-                out(1, style(path, "bold"))
+                out(1, bold(path))
             else:
                 out(1, "'{}' is not bookmarked.".format(path))
         save_config_file(config)
@@ -246,7 +243,7 @@ def list_bookmarks():
         bookmarks = []
     
     if bookmarks:
-        out(0, style("Current bookmarks:", "yellow"))
+        out(0, yellow("Current bookmarks:"))
         for bookmark_path, bookmark_name in bookmarks:
             out(1, bookmark_path)
     else:
@@ -288,7 +285,7 @@ def main():
     
     args = parser.parse_args()
     
-    print "{}: the git-repo-updater".format(style("gitup", "bold"))
+    print bold("gitup") + ": the git-repo-updater"
     
     if args.bookmarks_to_add:
         add_bookmarks(args.bookmarks_to_add)
