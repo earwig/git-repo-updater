@@ -13,7 +13,7 @@ import shlex
 import subprocess
 
 __author__ = "Ben Kurtovic"
-__copyright__ = "Copyright (c) 2011 by Ben Kurtovic"
+__copyright__ = "Copyright (c) 2011-2012 Ben Kurtovic"
 __license__ = "MIT License"
 __version__ = "0.1"
 __email__ = "ben.kurtovic@verizon.net"
