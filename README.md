@@ -5,8 +5,8 @@ It is smart enough to ignore repos with dirty working directories, and provides
 a (hopefully) great way to get everything up-to-date for those short periods of
 internet access between long periods of none.
 
-gitup works on both OS X and Linux. You should have the latest version of git
-and at least Python 2.7 installed.
+gitup should work on OS X, Linux, and Windows. You should have the latest
+version of git and at least Python 2.7 installed.
 
 # Installation
 
@@ -24,6 +24,12 @@ Then, to install for everyone:
     python setup.py install --user
 
 Finally, simply delete the `git-repo-updater` directory, and you're done!
+
+__Note:__ If you are using Windows, you may wish to add a macro so you can
+invoke gitup in any directory. Note that `C:\python27\` refers to the
+directory where Python is installed:
+
+    DOSKEY gitup=c:\python27\python.exe c:\python27\Scripts\gitup $*
 
 # Usage
 
