@@ -23,7 +23,7 @@ try:
         version = "0.1",
         scripts = ['gitup'],
         author = "Ben Kurtovic",
-        author_email = "ben.kurtovic@verizon.net",
+        author_email = "ben.kurtovic@gmail.com",
         description = desc,
         long_description = long_desc,
         license = "MIT License",
@@ -40,7 +40,7 @@ try:
         "Topic :: Software Development :: Version Control"
         ]
     )
-    
+
 finally:
     if remove_py_extension:
         os.rename("gitup", "gitup.py") # restore file location
