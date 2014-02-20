@@ -98,7 +98,7 @@ def update_repository(repo_path, repo_name):
         out(2, "There are new changes upstream...")
         status = exec_shell("git status")
 
-        if status.endswith("nothing to commit (working directory clean)"):
+        if status.endswith("nothing to commit, working directory clean"):
             out(2, green("Pulling new changes..."))
             result = exec_shell("git pull")
             out(2, "The following changes have been made since {}:".format(
