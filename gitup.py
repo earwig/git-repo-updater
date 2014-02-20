@@ -13,9 +13,9 @@ import shlex
 import subprocess
 
 __author__ = "Ben Kurtovic"
-__copyright__ = "Copyright (c) 2011-2012 Ben Kurtovic"
+__copyright__ = "Copyright (c) 2011-2014 Ben Kurtovic"
 __license__ = "MIT License"
-__version__ = "0.1"
+__version__ = "0.2.dev"
 __email__ = "ben.kurtovic@gmail.com"
 
 config_filename = os.path.join(os.path.expanduser("~"), ".gitup")

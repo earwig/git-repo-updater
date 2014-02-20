@@ -40,13 +40,13 @@ For example:
 
     gitup ~/repos/foo ~/repos/bar ~/repos/baz
 
-...will automatically pull to the `foo`, `bar`, and `baz` git repositories if
+will automatically pull to the `foo`, `bar`, and `baz` git repositories if
 their working directories are clean (to avoid merge conflicts). Additionally,
 you can just type:
 
     gitup ~/repos
 
-...to automatically update all git repositories in that directory.
+to automatically update all git repositories in that directory.
 
 To add a bookmark (or bookmarks), either of these will work:
 
