@@ -13,4 +13,4 @@ __license__ = "MIT License"
 __version__ = "0.2.dev"
 __email__ = "ben.kurtovic@gmail.com"
 
-from . import script
+from . import script, update
