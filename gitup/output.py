@@ -8,27 +8,11 @@ import re
 __all__ = ["out", "bold", "red", "green", "yellow", "blue"]
 
 # Text formatting functions:
-bold = lambda t: _style_text(t, "bold")
-red = lambda t: _style_text(t, "red")
-green = lambda t: _style_text(t, "green")
-yellow = lambda t: _style_text(t, "yellow")
-blue = lambda t: _style_text(t, "blue")
-
-def _style_text(text, effect):
-    """Give a text string a certain effect, such as boldness, or a color."""
-    ansi = {  # ANSI escape codes to make terminal output fancy
-        "reset": "\x1b[0m",
-        "bold": "\x1b[1m",
-        "red": "\x1b[1m\x1b[31m",
-        "green": "\x1b[1m\x1b[32m",
-        "yellow": "\x1b[1m\x1b[33m",
-        "blue": "\x1b[1m\x1b[34m",
-    }
-
-    try:  # Pad text with effect, unless effect does not exist
-        return ansi[effect] + text + ansi["reset"]
-    except KeyError:
-        return text
+bold = lambda t: "\x1b[1m" + t + "\x1b[0m"
+red = lambda t: "\x1b[1m\x1b[31m" + t + "\x1b[0m"
+green = lambda t: "\x1b[1m\x1b[32m" + t + "\x1b[0m"
+yellow = lambda t: "\x1b[1m\x1b[33m" + t + "\x1b[0m"
+blue = lambda t: "\x1b[1m\x1b[34m" + t + "\x1b[0m"
 
 def out(indent, msg):
     """Print a message at a given indentation level."""

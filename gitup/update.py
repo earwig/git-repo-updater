@@ -107,7 +107,7 @@ def _update_directory(dir_path, dir_name, is_bookmark=False):
         for item in dir_contents:
             repo_path = os.path.join(dir_path, item)
             repo_name = os.path.join(dir_name, item)
-            if _directory_is_git_repo(repo_path):  # Filter out non-repositories
+            if _directory_is_git_repo(repo_path):  # Filter out non-repos
                 repositories.append((repo_path, repo_name))
 
         num_of_repos = len(repositories)
