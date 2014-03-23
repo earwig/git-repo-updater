@@ -3,21 +3,24 @@
 # Copyright (C) 2011-2014 Ben Kurtovic <ben.kurtovic@gmail.com>
 # See the LICENSE file for details.
 
+from __future__ import print_function
+
 import os
 import shlex
 import subprocess
 
-from .output import out, bold, red, green, blue
+from colorama import Fore, Style
 
 __all__ = ["update_bookmarks", "update_directories"]
 
-def _exec_shell(command):
-    """Execute a shell command and get the output."""
-    command = shlex.split(command)
-    result = subprocess.check_output(command, stderr=subprocess.STDOUT)
-    if result:
-        result = result[:-1]  # Strip newline if command returned anything
-    return result
+BOLD = Style.BRIGHT
+RED = Fore.RED + BOLD
+GREEN = Fore.GREEN + BOLD
+BLUE = Fore.BLUE + BOLD
+RESET = Style.RESET_ALL
+
+INDENT1 = " " * 3
+INDENT2 = " " * 7
 
 def _directory_is_git_repo(directory_path):
     """Check if a directory is a git repository."""
@@ -29,17 +32,25 @@ def _directory_is_git_repo(directory_path):
 
 def _update_repository(repo_path, repo_name):
     """Update a single git repository by pulling from the remote."""
-    out(1, bold(repo_name) + ":")
+    def _exec_shell(command):
+        """Execute a shell command and get the output."""
+        command = shlex.split(command)
+        result = subprocess.check_output(command, stderr=subprocess.STDOUT)
+        if result:
+            result = result[:-1]  # Strip newline if command returned anything
+        return result
+
+    print(INDENT1, BOLD + repo_name + ":")
 
     # cd into our folder so git commands target the correct repo:
-    os.chdir(repo_path)
+    os.chdir(repo_path)  # TODO: remove this when using gitpython
 
     try:
         # Check if there is anything to pull, but don't do it yet:
         dry_fetch = _exec_shell("git fetch --dry-run")
     except subprocess.CalledProcessError:
-        out(2, red("Error: ") + "cannot fetch; do you have a remote " \
-            "repository configured correctly?")
+        print(INDENT2, RED + "Error:" + RESET, "cannot fetch;",
+              "do you have a remote repository configured correctly?")
         return
 
     try:
@@ -48,24 +59,27 @@ def _update_repository(repo_path, repo_name):
         last_commit = "never"  # Couldn't get a log, so no commits
 
     if not dry_fetch:  # No new changes to pull
-        out(2, blue("No new changes.") +
-            " Last commit was {0}.".format(last_commit))
+        print(INDENT2, BLUE + "No new changes." + RESET,
+              "Last commit was {0}.".format(last_commit))
 
     else:  # Stuff has happened!
-        out(2, "There are new changes upstream...")
+        print(INDENT2, "There are new changes upstream...")
         status = _exec_shell("git status")
 
         if status.endswith("nothing to commit, working directory clean"):
-            out(2, green("Pulling new changes..."))
+            print(INDENT2, GREEN + "Pulling new changes...")
             result = _exec_shell("git pull")
-            out(2, "The following changes have been made since {0}:".format(
-                    last_commit))
+            if last_commit == "never":
+                print(INDENT2, "The following changes have been made:")
+            else:
+                print(INDENT2, "The following changes have been made since",
+                      last_commit + ":")
             print(result)
 
         else:
-            out(2, red("Warning: ") +
-                "you have uncommitted changes in this repository!")
-            out(2, "Ignoring.")
+            print(INDENT2, RED + "Warning:" + RESET,
+                  "you have uncommitted changes in this repository!")
+            print(INDENT2, "Ignoring.")
 
 def _update_directory(dir_path, dir_name, is_bookmark=False):
     """Update a particular directory.
@@ -79,25 +93,24 @@ def _update_directory(dir_path, dir_name, is_bookmark=False):
         dir_type = "bookmark"  # Where did we get this directory from?
     else:
         dir_type = "directory"
-
-    dir_long_name = "{0} '{1}'".format(dir_type, bold(dir_path))
+    dir_long_name = dir_type + ' "' + BOLD + dir_path + RESET + '"'
 
     try:
         os.listdir(dir_path)  # Test if we can access this directory
     except OSError:
-        out(0, red("Error: ") +
-            "cannot enter {0}; does it exist?".format(dir_long_name))
+        print(RED + "Error:" + RESET,
+              "cannot enter {0}; does it exist?".format(dir_long_name))
         return
 
     if not os.path.isdir(dir_path):
         if os.path.exists(dir_path):
-            out(0, red("Error: ") + dir_long_name + " is not a directory!")
+            print(RED + "Error:" + RESET, dir_long_name, "is not a directory!")
         else:
-            out(0, red("Error: ") + dir_long_name + " does not exist!")
+            print(RED + "Error:" + RESET, dir_long_name, "does not exist!")
         return
 
     if _directory_is_git_repo(dir_path):
-        out(0, dir_long_name.capitalize() + " is a git repository:")
+        print(dir_long_name.capitalize(), "is a git repository:")
         _update_repository(dir_path, dir_name)
 
     else:
@@ -112,10 +125,10 @@ def _update_directory(dir_path, dir_name, is_bookmark=False):
 
         num_of_repos = len(repositories)
         if num_of_repos == 1:
-            out(0, dir_long_name.capitalize() + " contains 1 git repository:")
+            print(dir_long_name.capitalize(), "contains 1 git repository:")
         else:
-            out(0, dir_long_name.capitalize() +
-                " contains {0} git repositories:".format(num_of_repos))
+            print(dir_long_name.capitalize(),
+                  "contains {0} git repositories:".format(num_of_repos))
 
         repositories.sort()  # Go alphabetically instead of randomly
         for repo_path, repo_name in repositories:
@@ -127,8 +140,7 @@ def update_bookmarks(bookmarks):
         for bookmark_path, bookmark_name in bookmarks:
             _update_directory(bookmark_path, bookmark_name, is_bookmark=True)
     else:
-        out(0, "You don't have any bookmarks configured! " \
-            "Get help with 'gitup -h'.")
+        print("You don't have any bookmarks configured! Get help with 'gitup -h'.")
 
 def update_directories(paths):
     """Update a list of directories supplied by command arguments."""

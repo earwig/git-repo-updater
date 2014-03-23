@@ -7,10 +7,11 @@ from __future__ import print_function
 
 import argparse
 
+from colorama import init as color_init, Style
+
 from . import __version__, __email__
 from .config import (get_bookmarks, add_bookmarks, delete_bookmarks,
                      list_bookmarks)
-from .output import out, bold
 from .update import update_bookmarks, update_directories
 
 def main():
@@ -48,8 +49,11 @@ def main():
         '-v', '--version', action="version",
         version="gitup version " + __version__)
 
+    color_init(autoreset=True)
     args = parser.parse_args()
-    print(bold("gitup") + ": the git-repo-updater")
+
+    print(Style.BRIGHT + "gitup" + Style.RESET_ALL + ": the git-repo-updater")
+    print()
 
     if args.bookmarks_to_add:
         add_bookmarks(args.bookmarks_to_add)
@@ -71,4 +75,4 @@ def run():
     try:
         main()
     except KeyboardInterrupt:
-        out(0, "Stopped by user.")
+        print("Stopped by user.")
