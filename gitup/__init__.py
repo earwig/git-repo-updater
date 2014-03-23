@@ -12,5 +12,3 @@ __copyright__ = "Copyright (C) 2011-2014 Ben Kurtovic"
 __license__ = "MIT License"
 __version__ = "0.2.dev"
 __email__ = "ben.kurtovic@gmail.com"
-
-from . import config, script, update
