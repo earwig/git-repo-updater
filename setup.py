@@ -1,35 +1,35 @@
-from setuptools import setup
-import os
+# -*- coding: utf-8  -*-
+#
+# Copyright (C) 2011-2014 Ben Kurtovic <ben.kurtovic@gmail.com>
+# See the LICENSE file for details.
+
 import sys
+
+from setuptools import setup, find_packages
 
 if sys.hexversion < 0x02070000:
     exit("Please upgrade to Python 2.7 or greater: <http://python.org/>.")
 
-remove_py_extension = True # install script as "gitup" instead of "gitup.py"
+from gitup import __version__
 
-if os.path.exists("gitup"):
-    remove_py_extension = False
-else:
-    os.rename("gitup.py", "gitup")
+with open('README.md') as fp:
+    long_desc = fp.read()
 
-desc = "Easily pull to multiple git repositories at once."
-
-with open('README.md') as file:
-    long_desc = file.read()
-
-try:
-    setup(
-        name = "gitup",
-        version = "0.1",
-        scripts = ['gitup'],
-        author = "Ben Kurtovic",
-        author_email = "ben.kurtovic@gmail.com",
-        description = desc,
-        long_description = long_desc,
-        license = "MIT License",
-        keywords = "git repository pull update",
-        url = "http://github.com/earwig/git-repo-updater",
-        classifiers = ["Environment :: Console",
+setup(
+    name = "gitup",
+    packages = find_packages(),
+    entry_points = {"console_scripts": ["gitup = gitup.script:run"]},
+    install_requires = ["GitPython >= 0.3.2.RC1", "colorama >= 0.2.7"],
+    version = __version__,
+    author = "Ben Kurtovic",
+    author_email = "ben.kurtovic@gmail.com",
+    description = "Easily pull to multiple git repositories at once.",
+    long_description = long_desc,
+    license = "MIT License",
+    keywords = "git repository pull update",
+    url = "http://github.com/earwig/git-repo-updater",
+    classifiers = [
+        "Environment :: Console",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Natural Language :: English",
@@ -38,9 +38,5 @@ try:
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
         "Topic :: Software Development :: Version Control"
-        ]
-    )
-
-finally:
-    if remove_py_extension:
-        os.rename("gitup", "gitup.py") # restore file location
+    ]
+)

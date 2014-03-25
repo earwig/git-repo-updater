@@ -80,5 +80,5 @@ For a list of all command arguments and abbreviations:
 
     gitup --help
 
-Finally, all paths can be either absolute (e.g. /path/to/repo) or relative
-(e.g. ../my/repo).
+Finally, all paths can be either absolute (e.g. `/path/to/repo`) or relative
+(e.g. `../my/repo`).
