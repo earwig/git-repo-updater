@@ -21,9 +21,9 @@ RESET = Style.RESET_ALL
 INDENT1 = " " * 3
 INDENT2 = " " * 7
 
-def _update_repository(repo, repo_name):
+def _update_repository(repo):
     """Update a single git repository by pulling from the remote."""
-    print(INDENT1, BOLD + repo_name + ":")
+    print(INDENT1, BOLD + os.path.split(repo.working_dir)[1] + ":")
 
     try:
         # Check if there is anything to pull, but don't do it yet:
@@ -61,26 +61,23 @@ def _update_repository(repo, repo_name):
                   "you have uncommitted changes in this repository!")
             print(INDENT2, "Ignoring.")
 
-def _update_subdirectories(dir_path, dir_name, dir_long_name):
+def _update_subdirectories(path, long_name):
     """Update all subdirectories that are git repos in a given directory."""
     repos = []
-    for item in os.listdir(dir_path):
+    for item in os.listdir(path):
         try:
-            repo = Repo(os.path.join(dir_path, item))
+            repo = Repo(os.path.join(path, item))
         except (exc.InvalidGitRepositoryError, exc.NoSuchPathError):
             continue
-        repos.append((repo, os.path.join(dir_name, item)))
+        repos.append(repo)
 
-    if len(repos) == 1:
-        print(dir_long_name.capitalize(), "contains 1 git repository:")
-    else:
-        print(dir_long_name.capitalize(),
-              "contains {0} git repositories:".format(len(repos)))
+    suffix = "ies" if len(repos) != 1 else "y"
+    print(long_name[0].upper() + long_name[1:],
+          "contains {0} git repositor{1}:".format(len(repos), suffix))
+    for repo in sorted(repos):
+        _update_repository(repo)
 
-    for repo_path, repo_name in sorted(repos):
-        _update_repository(repo_path, repo_name)
-
-def _update_directory(dir_path, dir_name, is_bookmark=False):
+def _update_directory(path, is_bookmark=False):
     """Update a particular directory.
 
     Determine whether the directory is a git repo on its own, a directory of
@@ -89,32 +86,32 @@ def _update_directory(dir_path, dir_name, is_bookmark=False):
     third, print an error.
     """
     dir_type = "bookmark" if is_bookmark else "directory"
-    dir_long_name = dir_type + ' "' + BOLD + dir_path + RESET + '"'
+    long_name = dir_type + ' "' + BOLD + path + RESET + '"'
 
     try:
-        repo = Repo(dir_path)
+        repo = Repo(path)
     except exc.NoSuchPathError:
-        print(RED + "Error:" + RESET, dir_long_name, "doesn't exist!")
+        print(RED + "Error:" + RESET, long_name, "doesn't exist!")
     except exc.InvalidGitRepositoryError:
-        if os.path.isdir(dir_path):
-            _update_subdirectories(dir_path, dir_name, dir_long_name)
+        if os.path.isdir(path):
+            _update_subdirectories(path, long_name)
         else:
-            print(RED + "Error:" + RESET, dir_long_name, "isn't a repository!")
+            print(RED + "Error:" + RESET, long_name, "isn't a repository!")
     else:
-        print(dir_long_name.capitalize(), "is a git repository:")
-        _update_repository(repo, dir_name)
+        long_name = (dir_type.capitalize() + ' "' + BOLD + repo.working_dir +
+                     RESET + '"')
+        print(long_name, "is a git repository:")
+        _update_repository(repo)
 
 def update_bookmarks(bookmarks):
     """Loop through and update all bookmarks."""
     if bookmarks:
-        for bookmark_path, bookmark_name in bookmarks:
-            _update_directory(bookmark_path, bookmark_name, is_bookmark=True)
+        for path, name in bookmarks:
+            _update_directory(path, is_bookmark=True)
     else:
         print("You don't have any bookmarks configured! Get help with 'gitup -h'.")
 
 def update_directories(paths):
     """Update a list of directories supplied by command arguments."""
     for path in paths:
-        path = os.path.abspath(path)  # Convert relative to absolute path
-        path_name = os.path.split(path)[1]  # Dir name ("x" in /path/to/x/)
-        _update_directory(path, path_name, is_bookmark=False)
+        _update_directory(os.path.abspath(path), is_bookmark=False)
