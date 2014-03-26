@@ -6,10 +6,9 @@
 from __future__ import print_function
 
 import os
-import shlex
-import subprocess
 
 from colorama import Fore, Style
+from git import Repo, exc
 
 __all__ = ["update_bookmarks", "update_directories"]
 
@@ -22,28 +21,9 @@ RESET = Style.RESET_ALL
 INDENT1 = " " * 3
 INDENT2 = " " * 7
 
-def _directory_is_git_repo(directory_path):
-    """Check if a directory is a git repository."""
-    if os.path.isdir(directory_path):
-        git_subfolder = os.path.join(directory_path, ".git")
-        if os.path.isdir(git_subfolder):  # Check for path/to/repository/.git
-            return True
-    return False
-
-def _update_repository(repo_path, repo_name):
+def _update_repository(repo, repo_name):
     """Update a single git repository by pulling from the remote."""
-    def _exec_shell(command):
-        """Execute a shell command and get the output."""
-        command = shlex.split(command)
-        result = subprocess.check_output(command, stderr=subprocess.STDOUT)
-        if result:
-            result = result[:-1]  # Strip newline if command returned anything
-        return result
-
     print(INDENT1, BOLD + repo_name + ":")
-
-    # cd into our folder so git commands target the correct repo:
-    os.chdir(repo_path)  # TODO: remove this when using gitpython
 
     try:
         # Check if there is anything to pull, but don't do it yet:
@@ -81,58 +61,48 @@ def _update_repository(repo_path, repo_name):
                   "you have uncommitted changes in this repository!")
             print(INDENT2, "Ignoring.")
 
+def _update_subdirectories(dir_path, dir_name, dir_long_name):
+    """Update all subdirectories that are git repos in a given directory."""
+    repos = []
+    for item in os.listdir(dir_path):
+        try:
+            repo = Repo(os.path.join(dir_path, item))
+        except (exc.InvalidGitRepositoryError, exc.NoSuchPathError):
+            continue
+        repos.append((repo, os.path.join(dir_name, item)))
+
+    if len(repos) == 1:
+        print(dir_long_name.capitalize(), "contains 1 git repository:")
+    else:
+        print(dir_long_name.capitalize(),
+              "contains {0} git repositories:".format(len(repos)))
+
+    for repo_path, repo_name in sorted(repos):
+        _update_repository(repo_path, repo_name)
+
 def _update_directory(dir_path, dir_name, is_bookmark=False):
     """Update a particular directory.
 
-    First, make sure the specified object is actually a directory, then
-    determine whether the directory is a git repo on its own or a directory
-    of git repositories. If the former, update the single repository; if the
-    latter, update all repositories contained within.
+    Determine whether the directory is a git repo on its own, a directory of
+    git repositories, or something invalid. If the first, update the single
+    repository; if the second, update all repositories contained within; if the
+    third, print an error.
     """
-    if is_bookmark:
-        dir_type = "bookmark"  # Where did we get this directory from?
-    else:
-        dir_type = "directory"
+    dir_type = "bookmark" if is_bookmark else "directory"
     dir_long_name = dir_type + ' "' + BOLD + dir_path + RESET + '"'
 
     try:
-        os.listdir(dir_path)  # Test if we can access this directory
-    except OSError:
-        print(RED + "Error:" + RESET,
-              "cannot enter {0}; does it exist?".format(dir_long_name))
-        return
-
-    if not os.path.isdir(dir_path):
-        if os.path.exists(dir_path):
-            print(RED + "Error:" + RESET, dir_long_name, "is not a directory!")
+        repo = Repo(dir_path)
+    except exc.NoSuchPathError:
+        print(RED + "Error:" + RESET, dir_long_name, "doesn't exist!")
+    except exc.InvalidGitRepositoryError:
+        if os.path.isdir(dir_path):
+            _update_subdirectories(dir_path, dir_name, dir_long_name)
         else:
-            print(RED + "Error:" + RESET, dir_long_name, "does not exist!")
-        return
-
-    if _directory_is_git_repo(dir_path):
-        print(dir_long_name.capitalize(), "is a git repository:")
-        _update_repository(dir_path, dir_name)
-
+            print(RED + "Error:" + RESET, dir_long_name, "isn't a repository!")
     else:
-        repositories = []
-
-        dir_contents = os.listdir(dir_path)  # Get potential repos in directory
-        for item in dir_contents:
-            repo_path = os.path.join(dir_path, item)
-            repo_name = os.path.join(dir_name, item)
-            if _directory_is_git_repo(repo_path):  # Filter out non-repos
-                repositories.append((repo_path, repo_name))
-
-        num_of_repos = len(repositories)
-        if num_of_repos == 1:
-            print(dir_long_name.capitalize(), "contains 1 git repository:")
-        else:
-            print(dir_long_name.capitalize(),
-                  "contains {0} git repositories:".format(num_of_repos))
-
-        repositories.sort()  # Go alphabetically instead of randomly
-        for repo_path, repo_name in repositories:
-            _update_repository(repo_path, repo_name)
+        print(dir_long_name.capitalize(), "is a git repository:")
+        _update_repository(repo, dir_name)
 
 def update_bookmarks(bookmarks):
     """Loop through and update all bookmarks."""
