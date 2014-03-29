@@ -21,7 +21,7 @@ RESET = Style.RESET_ALL
 INDENT1 = " " * 3
 INDENT2 = " " * 7
 
-def _update_repository(repo):
+def _update_repository(repo, rebase=True):
     """Update a single git repository by fetching remotes and rebasing/merging.
 
     The specific actions depends on ...
@@ -31,7 +31,7 @@ def _update_repository(repo):
     ref = repo.head.ref.tracking_branch()
     if ref:
         remote = repo.remotes[ref.remote_name]
-    else:
+    # else:
         ###
 
     remote.fetch()
@@ -129,7 +129,8 @@ def _update_directory(path, is_bookmark=False):
         print(long_name, "is a git repository:")
         _update_repository(repo)
 
-def update_bookmarks(bookmarks):
+def update_bookmarks(bookmarks, current_only=False, rebase=False, merge=False,
+                     verbose=False):
     """Loop through and update all bookmarks."""
     if bookmarks:
         for path, name in bookmarks:
@@ -137,7 +138,8 @@ def update_bookmarks(bookmarks):
     else:
         print("You don't have any bookmarks configured! Get help with 'gitup -h'.")
 
-def update_directories(paths):
+def update_directories(paths, current_only=False, rebase=False, merge=False,
+                       verbose=False):
     """Update a list of directories supplied by command arguments."""
     for path in paths:
         _update_directory(os.path.abspath(path), is_bookmark=False)
