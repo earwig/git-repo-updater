@@ -22,8 +22,34 @@ INDENT1 = " " * 3
 INDENT2 = " " * 7
 
 def _update_repository(repo):
-    """Update a single git repository by pulling from the remote."""
+    """Update a single git repository by fetching remotes and rebasing/merging.
+
+    The specific actions depends on ...
+    """
     print(INDENT1, BOLD + os.path.split(repo.working_dir)[1] + ":")
+
+    ref = repo.head.ref.tracking_branch()
+    if ref:
+        remote = repo.remotes[ref.remote_name]
+    else:
+        ###
+
+    remote.fetch()
+
+    if not repo.remotes:
+        print(INDENT2, RED + "Error:" + RESET, "no remotes configured.")
+        return
+    try:
+        repo = repo.remotes.origin
+    except AttributeError:
+        if len(repo.remotes) == 1:
+            repo = repo.remotes[0]
+        else:
+            print(INDENT2, RED + "Error:" + RESET, "ambiguous remotes:",
+                  ", ".join(remote.name for remote in repo.remotes))
+
+
+    #####################################
 
     try:
         # Check if there is anything to pull, but don't do it yet:
@@ -74,7 +100,7 @@ def _update_subdirectories(path, long_name):
     suffix = "ies" if len(repos) != 1 else "y"
     print(long_name[0].upper() + long_name[1:],
           "contains {0} git repositor{1}:".format(len(repos), suffix))
-    for repo in sorted(repos):
+    for repo in sorted(repos, key=lambda r: os.path.split(r.working_dir)[1]):
         _update_repository(repo)
 
 def _update_directory(path, is_bookmark=False):
