@@ -41,7 +41,7 @@ def main():
     rebase_or_merge.add_argument(
         '-r', '--rebase', action="store_true", help="""always rebase upstream
         branches instead of following `pull.rebase` and `branch.<name>.rebase`
-        in git config (like `git pull --rebase`)""")
+        in git config (like `git pull --rebase=preserve`)""")
     rebase_or_merge.add_argument(
         '-m', '--merge', action="store_true", help="""like --rebase, but merge
         instead""")
@@ -82,10 +82,10 @@ def main():
         list_bookmarks()
         acted = True
     if args.directories_to_update:
-        update_directories(args.directories_to_update, *update_args)
+        update_directories(args.directories_to_update, update_args)
         acted = True
     if args.update or not acted:
-        update_bookmarks(get_bookmarks(), *update_args)
+        update_bookmarks(get_bookmarks(), update_args)
 
 def run():
     """Thin wrapper for main() that catches KeyboardInterrupts."""
