@@ -43,16 +43,28 @@ def _update_repository(repo, current_only=False, rebase=False, merge=False,
     """
     def _update_branch(branch):
         """Update a single branch."""
-        print(INDENT2, "Updating branch:", branch, end=" ")
+        print(INDENT2, "Updating", branch, end="...")
         upstream = branch.tracking_branch()
         if not upstream:
-            print("Branch is not tracking any remote.")
-            continue
+            print(" skipped; no upstream is tracked.")
+            return
+        if branch.commit == upstream.commit:
+            print(" up to date.")
+            return
+        branch.checkout()
         c_attr = "branch.{0}.rebase".format(branch.name)
         if not merge and (rebase or repo_rebase or _read_config(repo, c_attr)):
-            ### TODO: rebase
+            print(" rebasing...", end="")
+            try:
+                res = repo.git.rebase(upstream.name)
+            except exc.GitCommandError as err:
+                print(err)
+                ### TODO: ...
+            else:
+                print(" done.")
         else:
-            ### TODO: merge
+            repo.git.merge(upstream.name)
+            ### TODO: etc
 
     print(INDENT1, BOLD + os.path.split(repo.working_dir)[1] + ":")
 
@@ -65,55 +77,28 @@ def _update_repository(repo, current_only=False, rebase=False, merge=False,
         remotes = [repo.remotes[ref.remote_name]]
     else:
         remotes = repo.remotes
+    if not remotes:
+        print(INDENT2, ERROR, "no remotes configured to pull from.")
+        return
 
     for remote in remotes:
-        print(INDENT2, "Fetching remote:", remote.name)
-        remote.fetch()  # TODO: show progress
+        print(INDENT2, "Fetching", remote.name, end="...")
+        remote.fetch()  ### TODO: show progress
+        print(" done.")
 
     repo_rebase = _read_config(repo, "pull.rebase")
 
     _update_branch(active)
     branches = set(repo.heads) - {active}
     if branches:
-        stashed = repo.git.stash("--all") != "No local changes to save"
+        stashed = repo.git.stash("--all") != "No local changes to save"   ### TODO: don't do this unless actually necessary
         try:
             for branch in sorted(branches, key=lambda b: b.name):
-                branch.checkout()
                 _update_branch(branch)
         finally:
             active.checkout()
             if stashed:
                 repo.git.stash("pop")
-
-    #####################################
-
-    try:
-        last_commit = _exec_shell("git log -n 1 --pretty=\"%ar\"")
-    except subprocess.CalledProcessError:
-        last_commit = "never"  # Couldn't get a log, so no commits
-
-    if not dry_fetch:  # No new changes to pull
-        print(INDENT2, BLUE + "No new changes." + RESET,
-              "Last commit was {0}.".format(last_commit))
-
-    else:  # Stuff has happened!
-        print(INDENT2, "There are new changes upstream...")
-        status = _exec_shell("git status")
-
-        if status.endswith("nothing to commit, working directory clean"):
-            print(INDENT2, GREEN + "Pulling new changes...")
-            result = _exec_shell("git pull")
-            if last_commit == "never":
-                print(INDENT2, "The following changes have been made:")
-            else:
-                print(INDENT2, "The following changes have been made since",
-                      last_commit + ":")
-            print(result)
-
-        else:
-            print(INDENT2, RED + "Warning:" + RESET,
-                  "you have uncommitted changes in this repository!")
-            print(INDENT2, "Ignoring.")
 
 def _update_subdirectories(path, long_name, update_args):
     """Update all subdirectories that are git repos in a given directory."""
