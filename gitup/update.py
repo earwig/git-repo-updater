@@ -22,12 +22,39 @@ INDENT1 = " " * 3
 INDENT2 = " " * 7
 ERROR = RED + "Error:" + RESET
 
+class _Stasher(object):
+    """Manages the stash state of a given repository."""
+
+    def __init__(self, repo):
+        self._repo = repo
+        self._clean = self._stashed = False
+
+    def clean(self):
+        """Ensure the working directory is clean, so we can do checkouts."""
+        if not self._clean:
+            res = self._repo.git.stash("--all")
+            self._clean = True
+            if res != "No local changes to save":
+                self._stashed = True
+
+    def restore(self):
+        """Restore the pre-stash state."""
+        if self._stashed:
+            self._repo.git.stash("pop", "--index")
+
+
 def _read_config(repo, attr):
     """Read an attribute from git config."""
     try:
         return repo.git.config("--get", attr)
     except exc.GitCommandError:
         return None
+
+def _fetch_remote(remote):
+    """Fetch a given remote, and display progress info along the way."""
+    print(INDENT2, "Fetching", remote.name, end="...")
+    remote.fetch()  ### TODO: show progress
+    print(" done.")
 
 def _rebase(repo, name):
     """Rebase the current HEAD of *repo* onto the branch *name*."""
@@ -59,6 +86,25 @@ def _merge(repo, name):
     else:
         print(" done.")
 
+def _update_branch(repo, branch, merge, rebase, stasher=None):
+    """Update a single branch."""
+    print(INDENT2, "Updating", branch, end="...")
+    upstream = branch.tracking_branch()
+    if not upstream:
+        print(" skipped: no upstream is tracked.")
+        return
+    if branch.commit == upstream.commit:  ### TODO: a better check is possible
+        print(" up to date.")
+        return
+    if stasher:
+        stasher.clean()
+    branch.checkout()
+    config_attr = "branch.{0}.rebase".format(branch.name)
+    if not merge and (rebase or _read_config(repo, config_attr)):
+        _rebase(repo, upstream.name)
+    else:
+        _merge(repo, upstream.name)
+
 def _update_repository(repo, current_only=False, rebase=False, merge=False,
                        verbose=False):
     """Update a single git repository by fetching remotes and rebasing/merging.
@@ -71,23 +117,6 @@ def _update_repository(repo, current_only=False, rebase=False, merge=False,
     cause us to always merge. If *verbose* is set, additional information is
     printed out for the user.
     """
-    def _update_branch(branch):
-        """Update a single branch."""
-        print(INDENT2, "Updating", branch, end="...")
-        upstream = branch.tracking_branch()
-        if not upstream:
-            print(" skipped: no upstream is tracked.")
-            return
-        if branch.commit == upstream.commit:  ### TODO: a better check is possible
-            print(" up to date.")
-            return
-        branch.checkout()
-        c_attr = "branch.{0}.rebase".format(branch.name)
-        if not merge and (rebase or repo_rebase or _read_config(repo, c_attr)):
-            _rebase(repo, upstream.name)
-        else:
-            _merge(repo, upstream.name)
-
     print(INDENT1, BOLD + os.path.split(repo.working_dir)[1] + ":")
 
     active = repo.active_branch
@@ -104,23 +133,19 @@ def _update_repository(repo, current_only=False, rebase=False, merge=False,
         return
 
     for remote in remotes:
-        print(INDENT2, "Fetching", remote.name, end="...")
-        remote.fetch()  ### TODO: show progress
-        print(" done.")
+        _fetch_remote(remote)
 
-    repo_rebase = _read_config(repo, "pull.rebase")
-
-    _update_branch(active)
+    rebase = rebase or _read_config(repo, "pull.rebase")
+    _update_branch(repo, active, merge, rebase)
     branches = set(repo.heads) - {active}
     if branches:
-        stashed = repo.git.stash("--all") != "No local changes to save"   ### TODO: don't do this unless actually necessary
+        stasher = _Stasher(repo)
         try:
             for branch in sorted(branches, key=lambda b: b.name):
-                _update_branch(branch)
+                _update_branch(repo, branch, merge, rebase, stasher)
         finally:
             active.checkout()
-            if stashed:
-                repo.git.stash("pop")
+            stasher.restore()
 
 def _update_subdirectories(path, long_name, update_args):
     """Update all subdirectories that are git repos in a given directory."""
