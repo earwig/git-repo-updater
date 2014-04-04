@@ -29,6 +29,36 @@ def _read_config(repo, attr):
     except exc.GitCommandError:
         return None
 
+def _rebase(repo, name):
+    """Rebase the current HEAD of *repo* onto the branch *name*."""
+    print(" rebasing...", end="")
+    try:
+        res = repo.git.rebase(name)
+    except exc.GitCommandError as err:
+        if "unstaged changes" in err.stderr:
+            print(" error:", "unstaged changes.")
+        elif "uncommitted changes" in err.stderr:
+            print(" error:", "uncommitted changes.")
+        else:
+            try:
+                repo.git.rebase("--abort")
+            except exc.GitCommandError:
+                pass
+            print(" error:", err.stderr.replace("\n", " "))
+    else:
+        print(" done.")
+
+def _merge(repo, name):
+    """Merge the branch *name* into the current HEAD of *repo*."""
+    print(" merging...", end="")
+    try:
+        repo.git.merge(name)
+    except exc.GitCommandError as err:
+        print(err)
+        ### TODO: etc
+    else:
+        print(" done.")
+
 def _update_repository(repo, current_only=False, rebase=False, merge=False,
                        verbose=False):
     """Update a single git repository by fetching remotes and rebasing/merging.
@@ -46,25 +76,17 @@ def _update_repository(repo, current_only=False, rebase=False, merge=False,
         print(INDENT2, "Updating", branch, end="...")
         upstream = branch.tracking_branch()
         if not upstream:
-            print(" skipped; no upstream is tracked.")
+            print(" skipped: no upstream is tracked.")
             return
-        if branch.commit == upstream.commit:
+        if branch.commit == upstream.commit:  ### TODO: a better check is possible
             print(" up to date.")
             return
         branch.checkout()
         c_attr = "branch.{0}.rebase".format(branch.name)
         if not merge and (rebase or repo_rebase or _read_config(repo, c_attr)):
-            print(" rebasing...", end="")
-            try:
-                res = repo.git.rebase(upstream.name)
-            except exc.GitCommandError as err:
-                print(err)
-                ### TODO: ...
-            else:
-                print(" done.")
+            _rebase(repo, upstream.name)
         else:
-            repo.git.merge(upstream.name)
-            ### TODO: etc
+            _merge(repo, upstream.name)
 
     print(INDENT1, BOLD + os.path.split(repo.working_dir)[1] + ":")
 
