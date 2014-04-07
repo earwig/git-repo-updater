@@ -62,16 +62,17 @@ def _rebase(repo, name):
     try:
         res = repo.git.rebase(name)
     except exc.GitCommandError as err:
-        if "unstaged changes" in err.stderr:
+        msg = err.stderr.replace("\n", " ").strip()
+        if "unstaged changes" in msg:
             print(" error:", "unstaged changes.")
-        elif "uncommitted changes" in err.stderr:
+        elif "uncommitted changes" in msg:
             print(" error:", "uncommitted changes.")
         else:
             try:
                 repo.git.rebase("--abort")
             except exc.GitCommandError:
                 pass
-            print(" error:", err.stderr.replace("\n", " "))
+            print(" error:", msg if msg else "rebase conflict")
     else:
         print(" done.")
 
@@ -81,8 +82,15 @@ def _merge(repo, name):
     try:
         repo.git.merge(name)
     except exc.GitCommandError as err:
-        print(err)
-        ### TODO: etc
+        msg = err.stderr.replace("\n", " ").strip()
+        if "local changes" in msg and "would be overwritten" in msg:
+            print(" error:", "uncommitted changes.")
+        else:
+            try:
+                repo.git.merge("--abort")
+            except exc.GitCommandError:
+                pass
+            print(" error:", msg if msg else "merge conflict")
     else:
         print(" done.")
 
