@@ -56,6 +56,11 @@ def _fetch_remote(remote):
     remote.fetch()  ### TODO: show progress
     print(" done.")
 
+def _is_up_to_date(repo, branch, upstream):
+    """Return whether *branch* is up-to-date with its *upstream*."""
+    base = repo.git.merge_base(branch.commit, upstream.commit)
+    return repo.commit(base) == upstream.commit
+
 def _rebase(repo, name):
     """Rebase the current HEAD of *repo* onto the branch *name*."""
     print(" rebasing...", end="")
@@ -101,7 +106,12 @@ def _update_branch(repo, branch, merge, rebase, stasher=None):
     if not upstream:
         print(" skipped: no upstream is tracked.")
         return
-    if branch.commit == upstream.commit:  ### TODO: a better check is possible
+    try:
+        branch.commit, upstream.commit
+    except ValueError:
+        print(" skipped: branch contains no revisions.")
+        return
+    if _is_up_to_date(repo, branch, upstream):
         print(" up to date.")
         return
     if stasher:
