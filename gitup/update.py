@@ -9,6 +9,7 @@ import os
 
 from colorama import Fore, Style
 from git import Repo, exc
+from git.util import RemoteProgress
 
 __all__ = ["update_bookmarks", "update_directories"]
 
@@ -21,6 +22,30 @@ RESET = Style.RESET_ALL
 INDENT1 = " " * 3
 INDENT2 = " " * 7
 ERROR = RED + "Error:" + RESET
+
+class _ProgressMonitor(RemoteProgress):
+    """Displays relevant output during the fetching process."""
+
+    def __init__(self, verbose):
+        super(_ProgressMonitor, self).__init__()
+        self._verbose = verbose
+
+    def update(self, op_code, cur_count, max_count=None, message=''):
+        """Called whenever progress changes. Overrides default behavior."""
+        if self._verbose:
+            if op_code & self.COUNTING:
+                print(" ({0})".format(cur_count), end="")
+            elif op_code & (self.COMPRESSING | self.RECEIVING):
+                if op_code & self.BEGIN:
+                    print("\b, ", end="")
+                if op_code & self.END:
+                    end = ")"
+                else:
+                    end = "\b" * (1 + len(cur_count) + len(max_count))
+                print("{0}/{1}".format(cur_count, max_count), end=end)
+        elif op_code & self.BEGIN:
+                print(".", end="")
+
 
 class _Stasher(object):
     """Manages the stash state of a given repository."""
@@ -50,11 +75,32 @@ def _read_config(repo, attr):
     except exc.GitCommandError:
         return None
 
-def _fetch_remote(remote):
-    """Fetch a given remote, and display progress info along the way."""
-    print(INDENT2, "Fetching", remote.name, end="...")
-    remote.fetch()  ### TODO: show progress
-    print(" done.")
+def _format_fetch_result(results):
+    """Format and print the results of a verbose fetch."""
+    info = [("NEW_HEAD", "new branches"), ("NEW_TAG", "new tags"),
+            ("FAST_FORWARD", "updates"), ("ERROR", "errors")]
+    rlist = []
+    for attr, desc in info:
+        names = [res.name for res in results if res.flags & getattr(res, attr)]
+        if names:
+            rlist.append("{0} ({1})".format(desc, ", ".join(names)))
+    print(":", (", ".join(rlist) if rlist else "up to date") + ".")
+
+def _fetch_remotes(remotes, verbose):
+    """Fetch a list of remotes, displaying progress info along the way."""
+    if verbose:
+        for remote in remotes:
+            print(INDENT2, "Fetching", remote.name, end="")
+            result = remote.fetch(progress=_ProgressMonitor(True))
+            _format_fetch_result(result)
+    else:
+        print(INDENT2, "Fetching:", end=" ")
+        for i, remote in enumerate(remotes):
+            print(remote.name, end="")
+            remote.fetch(progress=_ProgressMonitor(False))
+            if i < len(remotes) - 1:
+                print(", ", end="")
+        print(".")
 
 def _is_up_to_date(repo, branch, upstream):
     """Return whether *branch* is up-to-date with its *upstream*."""
@@ -106,6 +152,7 @@ def _update_branch(repo, branch, merge, rebase, stasher=None):
     if not upstream:
         print(" skipped: no upstream is tracked.")
         return
+
     try:
         branch.commit, upstream.commit
     except ValueError:
@@ -114,6 +161,7 @@ def _update_branch(repo, branch, merge, rebase, stasher=None):
     if _is_up_to_date(repo, branch, upstream):
         print(" up to date.")
         return
+
     if stasher:
         stasher.clean()
     branch.checkout()
@@ -150,8 +198,7 @@ def _update_repository(repo, current_only=False, rebase=False, merge=False,
         print(INDENT2, ERROR, "no remotes configured to pull from.")
         return
 
-    for remote in remotes:
-        _fetch_remote(remote)
+    _fetch_remotes(remotes, verbose)
 
     rebase = rebase or _read_config(repo, "pull.rebase")
     _update_branch(repo, active, merge, rebase)
