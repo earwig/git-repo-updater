@@ -6,145 +6,277 @@
 from __future__ import print_function
 
 import os
-import shlex
-import subprocess
 
 from colorama import Fore, Style
+from git import RemoteReference as RemoteRef, Repo, exc
+from git.util import RemoteProgress
 
 __all__ = ["update_bookmarks", "update_directories"]
 
 BOLD = Style.BRIGHT
-RED = Fore.RED + BOLD
-GREEN = Fore.GREEN + BOLD
 BLUE = Fore.BLUE + BOLD
+GREEN = Fore.GREEN + BOLD
+RED = Fore.RED + BOLD
+YELLOW = Fore.YELLOW + BOLD
 RESET = Style.RESET_ALL
 
 INDENT1 = " " * 3
 INDENT2 = " " * 7
+ERROR = RED + "Error:" + RESET
 
-def _directory_is_git_repo(directory_path):
-    """Check if a directory is a git repository."""
-    if os.path.isdir(directory_path):
-        git_subfolder = os.path.join(directory_path, ".git")
-        if os.path.isdir(git_subfolder):  # Check for path/to/repository/.git
-            return True
-    return False
+class _ProgressMonitor(RemoteProgress):
+    """Displays relevant output during the fetching process."""
 
-def _update_repository(repo_path, repo_name):
-    """Update a single git repository by pulling from the remote."""
-    def _exec_shell(command):
-        """Execute a shell command and get the output."""
-        command = shlex.split(command)
-        result = subprocess.check_output(command, stderr=subprocess.STDOUT)
-        if result:
-            result = result[:-1]  # Strip newline if command returned anything
-        return result
+    def __init__(self):
+        super(_ProgressMonitor, self).__init__()
+        self._started = False
 
-    print(INDENT1, BOLD + repo_name + ":")
+    def update(self, op_code, cur_count, max_count=None, message=''):
+        """Called whenever progress changes. Overrides default behavior."""
+        if op_code & (self.COMPRESSING | self.RECEIVING):
+            if op_code & self.BEGIN:
+                print("\b, " if self._started else " (", end="")
+                if not self._started:
+                    self._started = True
+            if op_code & self.END:
+                end = ")"
+            else:
+                end = "\b" * (1 + len(cur_count) + len(max_count))
+            print("{0}/{1}".format(cur_count, max_count), end=end)
 
-    # cd into our folder so git commands target the correct repo:
-    os.chdir(repo_path)  # TODO: remove this when using gitpython
 
+class _Stasher(object):
+    """Manages the stash state of a given repository."""
+
+    def __init__(self, repo):
+        self._repo = repo
+        self._clean = self._stashed = False
+
+    def clean(self):
+        """Ensure the working directory is clean, so we can do checkouts."""
+        if not self._clean:
+            res = self._repo.git.stash("--all")
+            self._clean = True
+            if res != "No local changes to save":
+                self._stashed = True
+
+    def restore(self):
+        """Restore the pre-stash state."""
+        if self._stashed:
+            self._repo.git.stash("pop", "--index")
+
+
+def _read_config(repo, attr):
+    """Read an attribute from git config."""
     try:
-        # Check if there is anything to pull, but don't do it yet:
-        dry_fetch = _exec_shell("git fetch --dry-run")
-    except subprocess.CalledProcessError:
-        print(INDENT2, RED + "Error:" + RESET, "cannot fetch;",
-              "do you have a remote repository configured correctly?")
+        return repo.git.config("--get", attr)
+    except exc.GitCommandError:
+        return None
+
+def _fetch_remotes(remotes):
+    """Fetch a list of remotes, displaying progress info along the way."""
+    def _get_name(ref):
+        """Return the local name of a remote or tag reference."""
+        return ref.remote_head if isinstance(ref, RemoteRef) else ref.name
+
+    info = [("NEW_HEAD", "new branch", "new branches"),
+            ("NEW_TAG", "new tag", "new tags"),
+            ("FAST_FORWARD", "branch update", "branch updates")]
+    up_to_date = BLUE + "up to date" + RESET
+
+    for remote in remotes:
+        print(INDENT2, "Fetching", BOLD + remote.name, end="")
+        try:
+            results = remote.fetch(progress=_ProgressMonitor())
+        except exc.GitCommandError as err:
+            msg = err.command[0].replace("Error when fetching: ", "")
+            if not msg.endswith("."):
+                msg += "."
+            print(RED + "error:", msg)
+            return
+        except AssertionError:  # Seems to be the result of a bug in GitPython
+            # This happens when git initiates an auto-gc during fetch:
+            print(RED + "error:", "something went wrong in GitPython,",
+                  "but the fetch might have been successful.")
+        rlist = []
+        for attr, singular, plural in info:
+            names = [_get_name(res.ref)
+                     for res in results if res.flags & getattr(res, attr)]
+            if names:
+                desc = singular if len(names) == 1 else plural
+                colored = GREEN + desc + RESET
+                rlist.append("{0} ({1})".format(colored, ", ".join(names)))
+        print(":", (", ".join(rlist) if rlist else up_to_date) + ".")
+
+def _is_up_to_date(repo, branch, upstream):
+    """Return whether *branch* is up-to-date with its *upstream*."""
+    base = repo.git.merge_base(branch.commit, upstream.commit)
+    return repo.commit(base) == upstream.commit
+
+def _rebase(repo, name):
+    """Rebase the current HEAD of *repo* onto the branch *name*."""
+    print(GREEN + "rebasing...", end="")
+    try:
+        res = repo.git.rebase(name, "--preserve-merges")
+    except exc.GitCommandError as err:
+        msg = err.stderr.replace("\n", " ").strip()
+        if not msg.endswith("."):
+            msg += "."
+        if "unstaged changes" in msg:
+            print(RED + " error:", "unstaged changes.")
+        elif "uncommitted changes" in msg:
+            print(RED + " error:", "uncommitted changes.")
+        else:
+            try:
+                repo.git.rebase("--abort")
+            except exc.GitCommandError:
+                pass
+            print(RED + " error:", msg if msg else "rebase conflict.",
+                  "Aborted.")
+    else:
+        print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=".\n")
+
+def _merge(repo, name):
+    """Merge the branch *name* into the current HEAD of *repo*."""
+    print(GREEN + "merging...", end="")
+    try:
+        repo.git.merge(name)
+    except exc.GitCommandError as err:
+        msg = err.stderr.replace("\n", " ").strip()
+        if not msg.endswith("."):
+            msg += "."
+        if "local changes" in msg and "would be overwritten" in msg:
+            print(RED + " error:", "uncommitted changes.")
+        else:
+            try:
+                repo.git.merge("--abort")
+            except exc.GitCommandError:
+                pass
+            print(RED + " error:", msg if msg else "merge conflict.",
+                  "Aborted.")
+    else:
+        print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=".\n")
+
+def _update_branch(repo, branch, merge, rebase, stasher=None):
+    """Update a single branch."""
+    print(INDENT2, "Updating", BOLD + branch.name, end=": ")
+    upstream = branch.tracking_branch()
+    if not upstream:
+        print(YELLOW + "skipped:", "no upstream is tracked.")
         return
 
     try:
-        last_commit = _exec_shell("git log -n 1 --pretty=\"%ar\"")
-    except subprocess.CalledProcessError:
-        last_commit = "never"  # Couldn't get a log, so no commits
+        branch.commit, upstream.commit
+    except ValueError:
+        print(YELLOW + "skipped:", "branch has no revisions.")
+        return
+    if _is_up_to_date(repo, branch, upstream):
+        print(BLUE + "up to date", end=".\n")
+        return
 
-    if not dry_fetch:  # No new changes to pull
-        print(INDENT2, BLUE + "No new changes." + RESET,
-              "Last commit was {0}.".format(last_commit))
+    if stasher:
+        stasher.clean()
+    branch.checkout()
+    config_attr = "branch.{0}.rebase".format(branch.name)
+    if not merge and (rebase or _read_config(repo, config_attr)):
+        _rebase(repo, upstream.name)
+    else:
+        _merge(repo, upstream.name)
 
-    else:  # Stuff has happened!
-        print(INDENT2, "There are new changes upstream...")
-        status = _exec_shell("git status")
+def _update_branches(repo, active, merge, rebase):
+    """Update a list of branches."""
+    _update_branch(repo, active, merge, rebase)
+    branches = set(repo.heads) - {active}
+    if branches:
+        stasher = _Stasher(repo)
+        try:
+            for branch in sorted(branches, key=lambda b: b.name):
+                _update_branch(repo, branch, merge, rebase, stasher)
+        finally:
+            active.checkout()
+            stasher.restore()
 
-        if status.endswith("nothing to commit, working directory clean"):
-            print(INDENT2, GREEN + "Pulling new changes...")
-            result = _exec_shell("git pull")
-            if last_commit == "never":
-                print(INDENT2, "The following changes have been made:")
-            else:
-                print(INDENT2, "The following changes have been made since",
-                      last_commit + ":")
-            print(result)
+def _update_repository(repo, current_only=False, rebase=False, merge=False):
+    """Update a single git repository by fetching remotes and rebasing/merging.
 
-        else:
-            print(INDENT2, RED + "Warning:" + RESET,
-                  "you have uncommitted changes in this repository!")
-            print(INDENT2, "Ignoring.")
+    The specific actions depend on the arguments given. We will fetch all
+    remotes if *current_only* is ``False``, or only the remote tracked by the
+    current branch if ``True``. By default, we will merge unless
+    ``pull.rebase`` or ``branch.<name>.rebase`` is set in config; *rebase* will
+    cause us to always rebase with ``--preserve-merges``, and *merge* will
+    cause us to always merge.
+    """
+    print(INDENT1, BOLD + os.path.split(repo.working_dir)[1] + ":")
 
-def _update_directory(dir_path, dir_name, is_bookmark=False):
+    active = repo.active_branch
+    if current_only:
+        ref = active.tracking_branch()
+        if not ref:
+            print(INDENT2, ERROR, "no remote tracked by current branch.")
+            return
+        remotes = [repo.remotes[ref.remote_name]]
+    else:
+        remotes = repo.remotes
+    if not remotes:
+        print(INDENT2, ERROR, "no remotes configured to pull from.")
+        return
+    rebase = rebase or _read_config(repo, "pull.rebase")
+
+    _fetch_remotes(remotes)
+    _update_branches(repo, active, merge, rebase)
+
+def _update_subdirectories(path, long_name, update_args):
+    """Update all subdirectories that are git repos in a given directory."""
+    repos = []
+    for item in os.listdir(path):
+        try:
+            repo = Repo(os.path.join(path, item))
+        except (exc.InvalidGitRepositoryError, exc.NoSuchPathError):
+            continue
+        repos.append(repo)
+
+    suffix = "ies" if len(repos) != 1 else "y"
+    print(long_name[0].upper() + long_name[1:],
+          "contains {0} git repositor{1}:".format(len(repos), suffix))
+    for repo in sorted(repos, key=lambda r: os.path.split(r.working_dir)[1]):
+        _update_repository(repo, *update_args)
+
+def _update_directory(path, update_args, is_bookmark=False):
     """Update a particular directory.
 
-    First, make sure the specified object is actually a directory, then
-    determine whether the directory is a git repo on its own or a directory
-    of git repositories. If the former, update the single repository; if the
-    latter, update all repositories contained within.
+    Determine whether the directory is a git repo on its own, a directory of
+    git repositories, or something invalid. If the first, update the single
+    repository; if the second, update all repositories contained within; if the
+    third, print an error.
     """
-    if is_bookmark:
-        dir_type = "bookmark"  # Where did we get this directory from?
-    else:
-        dir_type = "directory"
-    dir_long_name = dir_type + ' "' + BOLD + dir_path + RESET + '"'
+    dir_type = "bookmark" if is_bookmark else "directory"
+    long_name = dir_type + ' "' + BOLD + path + RESET + '"'
 
     try:
-        os.listdir(dir_path)  # Test if we can access this directory
-    except OSError:
-        print(RED + "Error:" + RESET,
-              "cannot enter {0}; does it exist?".format(dir_long_name))
-        return
-
-    if not os.path.isdir(dir_path):
-        if os.path.exists(dir_path):
-            print(RED + "Error:" + RESET, dir_long_name, "is not a directory!")
+        repo = Repo(path)
+    except exc.NoSuchPathError:
+        print(ERROR, long_name, "doesn't exist!")
+    except exc.InvalidGitRepositoryError:
+        if os.path.isdir(path):
+            _update_subdirectories(path, long_name, update_args)
         else:
-            print(RED + "Error:" + RESET, dir_long_name, "does not exist!")
-        return
-
-    if _directory_is_git_repo(dir_path):
-        print(dir_long_name.capitalize(), "is a git repository:")
-        _update_repository(dir_path, dir_name)
-
+            print(ERROR, long_name, "isn't a repository!")
     else:
-        repositories = []
+        long_name = (dir_type.capitalize() + ' "' + BOLD + repo.working_dir +
+                     RESET + '"')
+        print(long_name, "is a git repository:")
+        _update_repository(repo, *update_args)
 
-        dir_contents = os.listdir(dir_path)  # Get potential repos in directory
-        for item in dir_contents:
-            repo_path = os.path.join(dir_path, item)
-            repo_name = os.path.join(dir_name, item)
-            if _directory_is_git_repo(repo_path):  # Filter out non-repos
-                repositories.append((repo_path, repo_name))
-
-        num_of_repos = len(repositories)
-        if num_of_repos == 1:
-            print(dir_long_name.capitalize(), "contains 1 git repository:")
-        else:
-            print(dir_long_name.capitalize(),
-                  "contains {0} git repositories:".format(num_of_repos))
-
-        repositories.sort()  # Go alphabetically instead of randomly
-        for repo_path, repo_name in repositories:
-            _update_repository(repo_path, repo_name)
-
-def update_bookmarks(bookmarks):
+def update_bookmarks(bookmarks, update_args):
     """Loop through and update all bookmarks."""
     if bookmarks:
-        for bookmark_path, bookmark_name in bookmarks:
-            _update_directory(bookmark_path, bookmark_name, is_bookmark=True)
+        for path, name in bookmarks:
+            _update_directory(path, update_args, is_bookmark=True)
     else:
         print("You don't have any bookmarks configured! Get help with 'gitup -h'.")
 
-def update_directories(paths):
+def update_directories(paths, update_args):
     """Update a list of directories supplied by command arguments."""
     for path in paths:
-        path = os.path.abspath(path)  # Convert relative to absolute path
-        path_name = os.path.split(path)[1]  # Dir name ("x" in /path/to/x/)
-        _update_directory(path, path_name, is_bookmark=False)
+        full_path = os.path.abspath(path)
+        _update_directory(full_path, update_args, is_bookmark=False)

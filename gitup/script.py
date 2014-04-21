@@ -17,7 +17,7 @@ from .update import update_bookmarks, update_directories
 def main():
     """Parse arguments and then call the appropriate function(s)."""
     parser = argparse.ArgumentParser(
-        description="""Easily pull to multiple git repositories at once.""",
+        description="""Easily update multiple git repositories at once.""",
         epilog="""
             Both relative and absolute paths are accepted by all arguments.
             Questions? Comments? Email the author at {0}.""".format(__email__),
@@ -26,6 +26,7 @@ def main():
     group_u = parser.add_argument_group("updating repositories")
     group_b = parser.add_argument_group("bookmarking")
     group_m = parser.add_argument_group("miscellaneous")
+    rebase_or_merge = group_u.add_mutually_exclusive_group()
 
     group_u.add_argument(
         'directories_to_update', nargs="*", metavar="path",
@@ -34,6 +35,17 @@ def main():
     group_u.add_argument(
         '-u', '--update', action="store_true", help="""update all bookmarks
         (default behavior when called without arguments)""")
+    group_u.add_argument(
+        '-c', '--current-only', action="store_true", help="""only fetch the
+        remote tracked by the current branch instead of all remotes""")
+    rebase_or_merge.add_argument(
+        '-r', '--rebase', action="store_true", help="""always rebase upstream
+        branches instead of following `pull.rebase` and `branch.<name>.rebase`
+        in git config (like `git pull --rebase=preserve`)""")
+    rebase_or_merge.add_argument(
+        '-m', '--merge', action="store_true", help="""like --rebase, but merge
+        instead""")
+
     group_b.add_argument(
         '-a', '--add', dest="bookmarks_to_add", nargs="+", metavar="path",
         help="add directory(s) as bookmarks")
@@ -51,24 +63,26 @@ def main():
 
     color_init(autoreset=True)
     args = parser.parse_args()
+    update_args = args.current_only, args.rebase, args.merge
 
     print(Style.BRIGHT + "gitup" + Style.RESET_ALL + ": the git-repo-updater")
     print()
 
+    acted = False
     if args.bookmarks_to_add:
         add_bookmarks(args.bookmarks_to_add)
+        acted = True
     if args.bookmarks_to_del:
         delete_bookmarks(args.bookmarks_to_del)
+        acted = True
     if args.list_bookmarks:
         list_bookmarks()
+        acted = True
     if args.directories_to_update:
-        update_directories(args.directories_to_update)
-    if args.update:
-        update_bookmarks(get_bookmarks())
-
-    # If they did not tell us to do anything, automatically update bookmarks:
-    if not any(vars(args).values()):
-        update_bookmarks(get_bookmarks())
+        update_directories(args.directories_to_update, update_args)
+        acted = True
+    if args.update or not acted:
+        update_bookmarks(get_bookmarks(), update_args)
 
 def run():
     """Thin wrapper for main() that catches KeyboardInterrupts."""
