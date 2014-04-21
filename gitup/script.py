@@ -36,7 +36,7 @@ def main():
         '-u', '--update', action="store_true", help="""update all bookmarks
         (default behavior when called without arguments)""")
     group_u.add_argument(
-        '-c', '--current-only', action="store_true", help="""only pull the
+        '-c', '--current-only', action="store_true", help="""only fetch the
         remote tracked by the current branch instead of all remotes""")
     rebase_or_merge.add_argument(
         '-r', '--rebase', action="store_true", help="""always rebase upstream

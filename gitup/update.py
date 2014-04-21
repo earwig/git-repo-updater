@@ -117,9 +117,11 @@ def _rebase(repo, name):
     """Rebase the current HEAD of *repo* onto the branch *name*."""
     print(GREEN + "rebasing...", end="")
     try:
-        res = repo.git.rebase(name)
+        res = repo.git.rebase(name, "--preserve-merges")
     except exc.GitCommandError as err:
         msg = err.stderr.replace("\n", " ").strip()
+        if not msg.endswith("."):
+            msg += "."
         if "unstaged changes" in msg:
             print(RED + " error:", "unstaged changes.")
         elif "uncommitted changes" in msg:
@@ -129,7 +131,8 @@ def _rebase(repo, name):
                 repo.git.rebase("--abort")
             except exc.GitCommandError:
                 pass
-            print(RED + " error:", msg if msg else "rebase conflict.")
+            print(RED + " error:", msg if msg else "rebase conflict.",
+                  "Aborted.")
     else:
         print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=".\n")
 
@@ -140,6 +143,8 @@ def _merge(repo, name):
         repo.git.merge(name)
     except exc.GitCommandError as err:
         msg = err.stderr.replace("\n", " ").strip()
+        if not msg.endswith("."):
+            msg += "."
         if "local changes" in msg and "would be overwritten" in msg:
             print(RED + " error:", "uncommitted changes.")
         else:
@@ -147,7 +152,8 @@ def _merge(repo, name):
                 repo.git.merge("--abort")
             except exc.GitCommandError:
                 pass
-            print(RED + " error:", msg if msg else "merge conflict.")
+            print(RED + " error:", msg if msg else "merge conflict.",
+                  "Aborted.")
     else:
         print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=".\n")
 
