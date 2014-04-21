@@ -28,14 +28,15 @@ class _ProgressMonitor(RemoteProgress):
 
     def __init__(self):
         super(_ProgressMonitor, self).__init__()
+        self._started = False
 
     def update(self, op_code, cur_count, max_count=None, message=''):
         """Called whenever progress changes. Overrides default behavior."""
-        if op_code & self.COUNTING:
-            print(" ({0})".format(cur_count), end="")
-        elif op_code & (self.COMPRESSING | self.RECEIVING):
+        if op_code & (self.COMPRESSING | self.RECEIVING):
             if op_code & self.BEGIN:
-                print("\b, ", end="")
+                print("\b, " if self._started else " (", end="")
+                if not self._started:
+                    self._started = True
             if op_code & self.END:
                 end = ")"
             else:
@@ -79,8 +80,7 @@ def _fetch_remotes(remotes):
 
     info = [("NEW_HEAD", "new branch", "new branches"),
             ("NEW_TAG", "new tag", "new tags"),
-            ("FAST_FORWARD", "branch update", "branch updates"),
-            ("ERROR", "error", "errors")]
+            ("FAST_FORWARD", "branch update", "branch updates")]
     up_to_date = BLUE + "up to date" + RESET
 
     for remote in remotes:
@@ -165,6 +165,19 @@ def _update_branch(repo, branch, merge, rebase, stasher=None):
     else:
         _merge(repo, upstream.name)
 
+def _update_branches(repo, active, merge, rebase):
+    """Update a list of branches."""
+    _update_branch(repo, active, merge, rebase)
+    branches = set(repo.heads) - {active}
+    if branches:
+        stasher = _Stasher(repo)
+        try:
+            for branch in sorted(branches, key=lambda b: b.name):
+                _update_branch(repo, branch, merge, rebase, stasher)
+        finally:
+            active.checkout()
+            stasher.restore()
+
 def _update_repository(repo, current_only=False, rebase=False, merge=False):
     """Update a single git repository by fetching remotes and rebasing/merging.
 
@@ -189,19 +202,10 @@ def _update_repository(repo, current_only=False, rebase=False, merge=False):
     if not remotes:
         print(INDENT2, ERROR, "no remotes configured to pull from.")
         return
-    _fetch_remotes(remotes)
-
     rebase = rebase or _read_config(repo, "pull.rebase")
-    _update_branch(repo, active, merge, rebase)
-    branches = set(repo.heads) - {active}
-    if branches:
-        stasher = _Stasher(repo)
-        try:
-            for branch in sorted(branches, key=lambda b: b.name):
-                _update_branch(repo, branch, merge, rebase, stasher)
-        finally:
-            active.checkout()
-            stasher.restore()
+
+    _fetch_remotes(remotes)
+    _update_branches(repo, active, merge, rebase)
 
 def _update_subdirectories(path, long_name, update_args):
     """Update all subdirectories that are git repos in a given directory."""
