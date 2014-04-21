@@ -45,9 +45,6 @@ def main():
     rebase_or_merge.add_argument(
         '-m', '--merge', action="store_true", help="""like --rebase, but merge
         instead""")
-    group_u.add_argument(
-        '-v', '--verbose', action="store_true", help="""show more detailed
-        information while updating""")
 
     group_b.add_argument(
         '-a', '--add', dest="bookmarks_to_add", nargs="+", metavar="path",
@@ -61,12 +58,12 @@ def main():
     group_m.add_argument(
         '-h', '--help', action="help", help="show this help message and exit")
     group_m.add_argument(
-        '-V', '--version', action="version",
+        '-v', '--version', action="version",
         version="gitup version " + __version__)
 
     color_init(autoreset=True)
     args = parser.parse_args()
-    update_args = args.current_only, args.rebase, args.merge, args.verbose
+    update_args = args.current_only, args.rebase, args.merge
 
     print(Style.BRIGHT + "gitup" + Style.RESET_ALL + ": the git-repo-updater")
     print()
