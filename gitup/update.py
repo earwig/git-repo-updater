@@ -14,9 +14,10 @@ from git.util import RemoteProgress
 __all__ = ["update_bookmarks", "update_directories"]
 
 BOLD = Style.BRIGHT
-RED = Fore.RED + BOLD
-GREEN = Fore.GREEN + BOLD
 BLUE = Fore.BLUE + BOLD
+GREEN = Fore.GREEN + BOLD
+RED = Fore.RED + BOLD
+YELLOW = Fore.YELLOW + BOLD
 RESET = Style.RESET_ALL
 
 INDENT1 = " " * 3
@@ -103,57 +104,57 @@ def _is_up_to_date(repo, branch, upstream):
 
 def _rebase(repo, name):
     """Rebase the current HEAD of *repo* onto the branch *name*."""
-    print(" rebasing...", end="")
+    print(GREEN + "rebasing...", end="")
     try:
         res = repo.git.rebase(name)
     except exc.GitCommandError as err:
         msg = err.stderr.replace("\n", " ").strip()
         if "unstaged changes" in msg:
-            print(" error:", "unstaged changes.")
+            print(RED, "error:" + RESET, "unstaged changes", end=")")
         elif "uncommitted changes" in msg:
-            print(" error:", "uncommitted changes.")
+            print(RED, "error:" + RESET, "uncommitted changes", end=")")
         else:
             try:
                 repo.git.rebase("--abort")
             except exc.GitCommandError:
                 pass
-            print(" error:", msg if msg else "rebase conflict")
+            print(RED, "error:" + RESET, msg if msg else "conflict", end=")")
     else:
-        print(" done.")
+        print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=")")
 
 def _merge(repo, name):
     """Merge the branch *name* into the current HEAD of *repo*."""
-    print(" merging...", end="")
+    print(GREEN + "merging...", end="")
     try:
         repo.git.merge(name)
     except exc.GitCommandError as err:
         msg = err.stderr.replace("\n", " ").strip()
         if "local changes" in msg and "would be overwritten" in msg:
-            print(" error:", "uncommitted changes.")
+            print(RED, "error:" + RESET, "uncommitted changes", end=")")
         else:
             try:
                 repo.git.merge("--abort")
             except exc.GitCommandError:
                 pass
-            print(" error:", msg if msg else "merge conflict")
+            print(RED, "error:" + RESET, msg if msg else "conflict", end=")")
     else:
-        print(" done.")
+        print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=")")
 
 def _update_branch(repo, branch, merge, rebase, stasher=None):
     """Update a single branch."""
-    print(INDENT2, "Updating", branch, end="...")
+    print(BOLD + branch.name, end=" (")
     upstream = branch.tracking_branch()
     if not upstream:
-        print(" skipped: no upstream is tracked.")
+        print(YELLOW + "skipped:" + RESET, "no upstream is tracked", end=")")
         return
 
     try:
         branch.commit, upstream.commit
     except ValueError:
-        print(" skipped: branch contains no revisions.")
+        print(YELLOW + "skipped:" + RESET, "branch has no revisions", end=")")
         return
     if _is_up_to_date(repo, branch, upstream):
-        print(" up to date.")
+        print(BLUE + "up to date", end=")")
         return
 
     if stasher:
@@ -167,16 +168,19 @@ def _update_branch(repo, branch, merge, rebase, stasher=None):
 
 def _update_branches(repo, active, merge, rebase):
     """Update a list of branches."""
+    print(INDENT2, "Updating: ", end="")
     _update_branch(repo, active, merge, rebase)
     branches = set(repo.heads) - {active}
     if branches:
         stasher = _Stasher(repo)
         try:
             for branch in sorted(branches, key=lambda b: b.name):
+                print(", ", end="")
                 _update_branch(repo, branch, merge, rebase, stasher)
         finally:
             active.checkout()
             stasher.restore()
+    print(".")
 
 def _update_repository(repo, current_only=False, rebase=False, merge=False):
     """Update a single git repository by fetching remotes and rebasing/merging.
