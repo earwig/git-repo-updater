@@ -85,8 +85,19 @@ def _fetch_remotes(remotes):
     up_to_date = BLUE + "up to date" + RESET
 
     for remote in remotes:
-        print(INDENT2, "Fetching", BOLD + remote.name, end="")
-        results = remote.fetch(progress=_ProgressMonitor())
+        print(INDENT2, "Fetching", BOLD + remote.name, end=": ")
+        try:
+            results = remote.fetch(progress=_ProgressMonitor())
+        except exc.GitCommandError as err:
+            msg = err.command[0].replace("Error when fetching: ", "")
+            if not msg.endswith("."):
+                msg += "."
+            print(RED + "error:", msg)
+            return
+        except AssertionError:  # Seems to be the result of a bug in GitPython
+            # This happens when git initiates an auto-gc during fetch:
+            print(RED + "error:", "something went wrong in GitPython,",
+                  "but the fetch might have been successful.")
         rlist = []
         for attr, singular, plural in info:
             names = [_get_name(res.ref)
@@ -95,7 +106,7 @@ def _fetch_remotes(remotes):
                 desc = singular if len(names) == 1 else plural
                 colored = GREEN + desc + RESET
                 rlist.append("{0} ({1})".format(colored, ", ".join(names)))
-        print(":", (", ".join(rlist) if rlist else up_to_date) + ".")
+        print((", ".join(rlist) if rlist else up_to_date) + ".")
 
 def _is_up_to_date(repo, branch, upstream):
     """Return whether *branch* is up-to-date with its *upstream*."""
@@ -110,15 +121,15 @@ def _rebase(repo, name):
     except exc.GitCommandError as err:
         msg = err.stderr.replace("\n", " ").strip()
         if "unstaged changes" in msg:
-            print(RED, "error:" + RESET, "unstaged changes", end=")")
+            print(RED + " error:", "unstaged changes", end=")")
         elif "uncommitted changes" in msg:
-            print(RED, "error:" + RESET, "uncommitted changes", end=")")
+            print(RED + " error:", "uncommitted changes", end=")")
         else:
             try:
                 repo.git.rebase("--abort")
             except exc.GitCommandError:
                 pass
-            print(RED, "error:" + RESET, msg if msg else "conflict", end=")")
+            print(RED + " error:", msg if msg else "rebase conflict", end=")")
     else:
         print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=")")
 
@@ -130,13 +141,13 @@ def _merge(repo, name):
     except exc.GitCommandError as err:
         msg = err.stderr.replace("\n", " ").strip()
         if "local changes" in msg and "would be overwritten" in msg:
-            print(RED, "error:" + RESET, "uncommitted changes", end=")")
+            print(RED + " error:", "uncommitted changes", end=")")
         else:
             try:
                 repo.git.merge("--abort")
             except exc.GitCommandError:
                 pass
-            print(RED, "error:" + RESET, msg if msg else "conflict", end=")")
+            print(RED + " error:", msg if msg else "merge conflict", end=")")
     else:
         print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=")")
 
@@ -145,13 +156,13 @@ def _update_branch(repo, branch, merge, rebase, stasher=None):
     print(BOLD + branch.name, end=" (")
     upstream = branch.tracking_branch()
     if not upstream:
-        print(YELLOW + "skipped:" + RESET, "no upstream is tracked", end=")")
+        print(YELLOW + "skipped:", "no upstream is tracked", end=")")
         return
 
     try:
         branch.commit, upstream.commit
     except ValueError:
-        print(YELLOW + "skipped:" + RESET, "branch has no revisions", end=")")
+        print(YELLOW + "skipped:", "branch has no revisions", end=")")
         return
     if _is_up_to_date(repo, branch, upstream):
         print(BLUE + "up to date", end=")")
