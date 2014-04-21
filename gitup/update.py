@@ -92,12 +92,13 @@ def _fetch_remotes(remotes):
             msg = err.command[0].replace("Error when fetching: ", "")
             if not msg.endswith("."):
                 msg += "."
-            print(RED + "error:", msg)
+            print(":", RED + "error:", msg)
             return
         except AssertionError:  # Seems to be the result of a bug in GitPython
             # This happens when git initiates an auto-gc during fetch:
-            print(RED + "error:", "something went wrong in GitPython,",
+            print(":", RED + "error:", "something went wrong in GitPython,",
                   "but the fetch might have been successful.")
+            return
         rlist = []
         for attr, singular, plural in info:
             names = [_get_name(res.ref)
