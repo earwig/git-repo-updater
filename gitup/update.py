@@ -85,7 +85,7 @@ def _fetch_remotes(remotes):
     up_to_date = BLUE + "up to date" + RESET
 
     for remote in remotes:
-        print(INDENT2, "Fetching", BOLD + remote.name, end=": ")
+        print(INDENT2, "Fetching", BOLD + remote.name, end="")
         try:
             results = remote.fetch(progress=_ProgressMonitor())
         except exc.GitCommandError as err:
@@ -106,7 +106,7 @@ def _fetch_remotes(remotes):
                 desc = singular if len(names) == 1 else plural
                 colored = GREEN + desc + RESET
                 rlist.append("{0} ({1})".format(colored, ", ".join(names)))
-        print((", ".join(rlist) if rlist else up_to_date) + ".")
+        print(":", (", ".join(rlist) if rlist else up_to_date) + ".")
 
 def _is_up_to_date(repo, branch, upstream):
     """Return whether *branch* is up-to-date with its *upstream*."""
@@ -121,17 +121,17 @@ def _rebase(repo, name):
     except exc.GitCommandError as err:
         msg = err.stderr.replace("\n", " ").strip()
         if "unstaged changes" in msg:
-            print(RED + " error:", "unstaged changes", end=")")
+            print(RED + " error:", "unstaged changes.")
         elif "uncommitted changes" in msg:
-            print(RED + " error:", "uncommitted changes", end=")")
+            print(RED + " error:", "uncommitted changes.")
         else:
             try:
                 repo.git.rebase("--abort")
             except exc.GitCommandError:
                 pass
-            print(RED + " error:", msg if msg else "rebase conflict", end=")")
+            print(RED + " error:", msg if msg else "rebase conflict.")
     else:
-        print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=")")
+        print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=".\n")
 
 def _merge(repo, name):
     """Merge the branch *name* into the current HEAD of *repo*."""
@@ -141,31 +141,31 @@ def _merge(repo, name):
     except exc.GitCommandError as err:
         msg = err.stderr.replace("\n", " ").strip()
         if "local changes" in msg and "would be overwritten" in msg:
-            print(RED + " error:", "uncommitted changes", end=")")
+            print(RED + " error:", "uncommitted changes.")
         else:
             try:
                 repo.git.merge("--abort")
             except exc.GitCommandError:
                 pass
-            print(RED + " error:", msg if msg else "merge conflict", end=")")
+            print(RED + " error:", msg if msg else "merge conflict.")
     else:
-        print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=")")
+        print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=".\n")
 
 def _update_branch(repo, branch, merge, rebase, stasher=None):
     """Update a single branch."""
-    print(BOLD + branch.name, end=" (")
+    print(INDENT2, "Updating", BOLD + branch.name, end=": ")
     upstream = branch.tracking_branch()
     if not upstream:
-        print(YELLOW + "skipped:", "no upstream is tracked", end=")")
+        print(YELLOW + "skipped:", "no upstream is tracked.")
         return
 
     try:
         branch.commit, upstream.commit
     except ValueError:
-        print(YELLOW + "skipped:", "branch has no revisions", end=")")
+        print(YELLOW + "skipped:", "branch has no revisions.")
         return
     if _is_up_to_date(repo, branch, upstream):
-        print(BLUE + "up to date", end=")")
+        print(BLUE + "up to date", end=".\n")
         return
 
     if stasher:
@@ -179,19 +179,16 @@ def _update_branch(repo, branch, merge, rebase, stasher=None):
 
 def _update_branches(repo, active, merge, rebase):
     """Update a list of branches."""
-    print(INDENT2, "Updating: ", end="")
     _update_branch(repo, active, merge, rebase)
     branches = set(repo.heads) - {active}
     if branches:
         stasher = _Stasher(repo)
         try:
             for branch in sorted(branches, key=lambda b: b.name):
-                print(", ", end="")
                 _update_branch(repo, branch, merge, rebase, stasher)
         finally:
             active.checkout()
             stasher.restore()
-    print(".")
 
 def _update_repository(repo, current_only=False, rebase=False, merge=False):
     """Update a single git repository by fetching remotes and rebasing/merging.
