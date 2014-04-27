@@ -186,7 +186,8 @@ def _update_branch(repo, branch, merge, rebase, stasher=None):
 
 def _update_branches(repo, active, merge, rebase):
     """Update a list of branches."""
-    _update_branch(repo, active, merge, rebase)
+    if active:
+        _update_branch(repo, active, merge, rebase)
     branches = set(repo.heads) - {active}
     if branches:
         stasher = _Stasher(repo)
@@ -194,7 +195,8 @@ def _update_branches(repo, active, merge, rebase):
             for branch in sorted(branches, key=lambda b: b.name):
                 _update_branch(repo, branch, merge, rebase, stasher)
         finally:
-            active.checkout()
+            if active:
+                active.checkout()
             stasher.restore()
 
 def _update_repository(repo, current_only=False, rebase=False, merge=False):
@@ -209,9 +211,12 @@ def _update_repository(repo, current_only=False, rebase=False, merge=False):
     """
     print(INDENT1, BOLD + os.path.split(repo.working_dir)[1] + ":")
 
-    active = repo.active_branch
+    try:
+        active = repo.active_branch
+    except TypeError:  # Happens when HEAD is detached
+        active = None
     if current_only:
-        ref = active.tracking_branch()
+        ref = active.tracking_branch() if active else None
         if not ref:
             print(INDENT2, ERROR, "no remote tracked by current branch.")
             return
