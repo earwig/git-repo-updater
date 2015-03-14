@@ -10,5 +10,5 @@ gitup: the git repository updater
 __author__ = "Ben Kurtovic"
 __copyright__ = "Copyright (C) 2011-2014 Ben Kurtovic"
 __license__ = "MIT License"
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 __email__ = "ben.kurtovic@gmail.com"

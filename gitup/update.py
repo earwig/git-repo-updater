@@ -34,15 +34,23 @@ class _ProgressMonitor(RemoteProgress):
     def update(self, op_code, cur_count, max_count=None, message=''):
         """Called whenever progress changes. Overrides default behavior."""
         if op_code & (self.COMPRESSING | self.RECEIVING):
+            cur_count = str(int(cur_count))
+            if max_count:
+                max_count = str(int(max_count))
             if op_code & self.BEGIN:
                 print("\b, " if self._started else " (", end="")
                 if not self._started:
                     self._started = True
             if op_code & self.END:
                 end = ")"
-            else:
+            elif max_count:
                 end = "\b" * (1 + len(cur_count) + len(max_count))
-            print("{0}/{1}".format(cur_count, max_count), end=end)
+            else:
+                end = "\b" * len(cur_count)
+            if max_count:
+                print("{0}/{1}".format(cur_count, max_count), end=end)
+            else:
+                print(str(cur_count), end=end)
 
 
 class _Stasher(object):
