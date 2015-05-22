@@ -10,6 +10,12 @@ version of git and at least Python 2.7 installed.
 
 # Installation
 
+With [Homebrew](http://brew.sh/):
+
+    `brew install pr0d1r2/contrib/gitup && brew link gitup`
+
+## From source
+
 First:
 
     git clone git://github.com/earwig/git-repo-updater.git
@@ -30,10 +36,6 @@ invoke gitup in any directory. Note that `C:\python27\` refers to the
 directory where Python is installed:
 
     DOSKEY gitup=c:\python27\python.exe c:\python27\Scripts\gitup $*
-
-# Homebrew Installation
-
-`brew install pr0d1r2/contrib/gitup && brew link gitup`
 
 # Usage
 
