@@ -13,7 +13,8 @@ from colorama import Fore, Style
 __all__ = ["get_bookmarks", "add_bookmarks", "delete_bookmarks",
            "list_bookmarks"]
 
-CONFIG_FILENAME = os.path.join(os.path.expanduser("~"), ".gitup")
+CONFIG_FILENAME = os.path.join(os.path.expanduser('~/.config'), '.gitup') if \
+    os.path.exists(os.path.expanduser('~/.config')) else os.path.join(os.path.expanduser('~'), '.gitup')
 
 YELLOW = Fore.YELLOW + Style.BRIGHT
 RED = Fore.RED + Style.BRIGHT
