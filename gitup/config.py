@@ -13,24 +13,31 @@ from colorama import Fore, Style
 __all__ = ["get_bookmarks", "add_bookmarks", "delete_bookmarks",
            "list_bookmarks"]
 
-CONFIG_FILENAME = os.path.join(os.path.expanduser("~"), ".gitup")
-
 YELLOW = Fore.YELLOW + Style.BRIGHT
 RED = Fore.RED + Style.BRIGHT
 
 INDENT1 = " " * 3
+
+def _get_config_path():
+    """Return the path to the configuration file."""
+    xdg_cfg = os.environ.get("XDG_CONFIG_HOME") or os.path.join("~", ".config")
+    return os.path.join(os.path.expanduser(xdg_cfg), "gitup", "config.ini")
 
 def _load_config_file():
     """Read the config file and return a SafeConfigParser() object."""
     config = configparser.SafeConfigParser()
     # Don't lowercase option names, because we are storing paths there:
     config.optionxform = str
-    config.read(CONFIG_FILENAME)
+    config.read(_get_config_path())
     return config
 
 def _save_config_file(config):
-    """Save config changes to the config file specified by CONFIG_FILENAME."""
-    with open(CONFIG_FILENAME, "wb") as config_file:
+    """Save config changes to the config file returned by _get_config_path."""
+    cfg_path = _get_config_path()
+    if not os.path.exists(os.path.dirname(cfg_path)):  # Race condition, meh...
+        os.makedirs(os.path.dirname(cfg_path))
+
+    with open(cfg_path, "wb") as config_file:
         config.write(config_file)
 
 def get_bookmarks():
