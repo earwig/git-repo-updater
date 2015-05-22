@@ -31,6 +31,10 @@ directory where Python is installed:
 
     DOSKEY gitup=c:\python27\python.exe c:\python27\Scripts\gitup $*
 
+# Homebrew Installation
+
+`brew install pr0d1r2/contrib/gitup && brew link gitup`
+
 # Usage
 
 There are two ways to update repos: you can pass them as command arguments,
