@@ -12,7 +12,7 @@ version of git and at least Python 2.7 installed.
 
 With [Homebrew](http://brew.sh/):
 
-    `brew install pr0d1r2/contrib/gitup && brew link gitup`
+    brew install pr0d1r2/contrib/gitup && brew link gitup
 
 ## From source
 
