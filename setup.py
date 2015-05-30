@@ -1,6 +1,6 @@
 # -*- coding: utf-8  -*-
 #
-# Copyright (C) 2011-2014 Ben Kurtovic <ben.kurtovic@gmail.com>
+# Copyright (C) 2011-2015 Ben Kurtovic <ben.kurtovic@gmail.com>
 # See the LICENSE file for details.
 
 import sys
