@@ -1,7 +1,7 @@
 # -*- coding: utf-8  -*-
 #
 # Copyright (C) 2011-2015 Ben Kurtovic <ben.kurtovic@gmail.com>
-# See the LICENSE file for details.
+# Released under the terms of the MIT License. See LICENSE for details.
 
 from __future__ import print_function
 
@@ -9,7 +9,7 @@ import argparse
 
 from colorama import init as color_init, Style
 
-from . import __version__, __email__
+from . import __version__
 from .config import (get_bookmarks, add_bookmarks, delete_bookmarks,
                      list_bookmarks)
 from .update import update_bookmarks, update_directories
@@ -17,10 +17,11 @@ from .update import update_bookmarks, update_directories
 def main():
     """Parse arguments and then call the appropriate function(s)."""
     parser = argparse.ArgumentParser(
-        description="""Easily update multiple git repositories at once.""",
+        description="Easily update multiple git repositories at once.",
         epilog="""
             Both relative and absolute paths are accepted by all arguments.
-            Questions? Comments? Email the author at {0}.""".format(__email__),
+            Direct bug reports and feature requests to:
+            https://github.com/earwig/git-repo-updater.""",
         add_help=False)
 
     group_u = parser.add_argument_group("updating repositories")
@@ -41,7 +42,7 @@ def main():
     rebase_or_merge.add_argument(
         '-r', '--rebase', action="store_true", help="""always rebase upstream
         branches instead of following `pull.rebase` and `branch.<name>.rebase`
-        in git config (like `git pull --rebase=preserve`)""")
+        in git config (behaves like `git pull --rebase=preserve`)""")
     rebase_or_merge.add_argument(
         '-m', '--merge', action="store_true", help="""like --rebase, but merge
         instead""")
@@ -59,7 +60,7 @@ def main():
         '-h', '--help', action="help", help="show this help message and exit")
     group_m.add_argument(
         '-v', '--version', action="version",
-        version="gitup version " + __version__)
+        version="gitup " + __version__)
 
     color_init(autoreset=True)
     args = parser.parse_args()

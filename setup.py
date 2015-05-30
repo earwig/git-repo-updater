@@ -1,7 +1,7 @@
 # -*- coding: utf-8  -*-
 #
 # Copyright (C) 2011-2015 Ben Kurtovic <ben.kurtovic@gmail.com>
-# See the LICENSE file for details.
+# Released under the terms of the MIT License. See LICENSE for details.
 
 import sys
 
@@ -23,7 +23,7 @@ setup(
     version = __version__,
     author = "Ben Kurtovic",
     author_email = "ben.kurtovic@gmail.com",
-    description = "Easily pull to multiple git repositories at once.",
+    description = "Easily pull to multiple git repositories at once",
     long_description = long_desc,
     license = "MIT License",
     keywords = "git repository pull update",

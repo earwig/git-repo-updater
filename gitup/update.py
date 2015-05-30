@@ -1,7 +1,7 @@
 # -*- coding: utf-8  -*-
 #
 # Copyright (C) 2011-2015 Ben Kurtovic <ben.kurtovic@gmail.com>
-# See the LICENSE file for details.
+# Released under the terms of the MIT License. See LICENSE for details.
 
 from __future__ import print_function
 

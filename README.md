@@ -12,7 +12,7 @@ version of git and at least Python 2.7 installed.
 
 With [Homebrew](http://brew.sh/):
 
-    brew install pr0d1r2/contrib/gitup && brew link gitup
+    brew install gitup
 
 ## From source
 
@@ -85,9 +85,9 @@ By default, gitup will fetch all remotes in a repository. Pass `--current-only`
 (or `-c`) to make it only fetch the remote tracked by the current branch.
 
 gitup will _merge_ upstream branches by default unless `pull.rebase` or
-`branch.<name>.rebase` is specified in git's config. Pass `--rebase` or `-r` to
-make it always _rebase_ (like doing `git pull --rebase=preserve`). Pass
-`--merge` or `-m` to make it always merge.
+`branch.<name>.rebase` is specified in your git config. Pass `--rebase` or `-r`
+to make it always _rebase_ (this is like doing `git pull --rebase=preserve`).
+Pass `--merge` or `-m` to make it always merge.
 
 For a list of all command arguments and abbreviations:
 
