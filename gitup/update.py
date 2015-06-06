@@ -53,34 +53,6 @@ class _ProgressMonitor(RemoteProgress):
                 print(str(cur_count), end=end)
 
 
-class _Stasher(object):
-    """Manages the stash state of a given repository."""
-
-    def __init__(self, repo):
-        self._repo = repo
-        self._clean = self._stashed = False
-
-    def clean(self):
-        """Ensure the working directory is clean, so we can do checkouts."""
-        if not self._clean:
-            res = self._repo.git.stash("--all")
-            self._clean = True
-            if res != "No local changes to save":
-                self._stashed = True
-
-    def restore(self):
-        """Restore the pre-stash state."""
-        if self._stashed:
-            self._repo.git.stash("pop", "--index")
-
-
-def _read_config(repo, attr):
-    """Read an attribute from git config."""
-    try:
-        return repo.git.config("--get", attr)
-    except exc.GitCommandError:
-        return None
-
 def _fetch_remotes(remotes):
     """Fetch a list of remotes, displaying progress info along the way."""
     def _get_name(ref):
@@ -122,56 +94,7 @@ def _fetch_remotes(remotes):
                 rlist.append("{0} ({1})".format(colored, ", ".join(names)))
         print(":", (", ".join(rlist) if rlist else up_to_date) + ".")
 
-def _is_up_to_date(repo, branch, upstream):
-    """Return whether *branch* is up-to-date with its *upstream*."""
-    base = repo.git.merge_base(branch.commit, upstream.commit)
-    return repo.commit(base) == upstream.commit
-
-def _rebase(repo, name):
-    """Rebase the current HEAD of *repo* onto the branch *name*."""
-    print(GREEN + "rebasing...", end="")
-    try:
-        res = repo.git.rebase(name, "--preserve-merges")
-    except exc.GitCommandError as err:
-        msg = err.stderr.replace("\n", " ").strip()
-        if not msg.endswith("."):
-            msg += "."
-        if "unstaged changes" in msg:
-            print(RED + " error:", "unstaged changes.")
-        elif "uncommitted changes" in msg:
-            print(RED + " error:", "uncommitted changes.")
-        else:
-            try:
-                repo.git.rebase("--abort")
-            except exc.GitCommandError:
-                pass
-            print(RED + " error:", msg if msg else "rebase conflict.",
-                  "Aborted.")
-    else:
-        print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=".\n")
-
-def _merge(repo, name):
-    """Merge the branch *name* into the current HEAD of *repo*."""
-    print(GREEN + "merging...", end="")
-    try:
-        repo.git.merge(name)
-    except exc.GitCommandError as err:
-        msg = err.stderr.replace("\n", " ").strip()
-        if not msg.endswith("."):
-            msg += "."
-        if "local changes" in msg and "would be overwritten" in msg:
-            print(RED + " error:", "uncommitted changes.")
-        else:
-            try:
-                repo.git.merge("--abort")
-            except exc.GitCommandError:
-                pass
-            print(RED + " error:", msg if msg else "merge conflict.",
-                  "Aborted.")
-    else:
-        print("\b" * 6 + " " * 6 + "\b" * 6 + GREEN + "ed", end=".\n")
-
-def _update_branch(repo, branch, merge, rebase, stasher=None):
+def _update_branch(repo, branch, is_active=False):
     """Update a single branch."""
     print(INDENT2, "Updating", BOLD + branch.name, end=": ")
     upstream = branch.tracking_branch()
@@ -184,43 +107,39 @@ def _update_branch(repo, branch, merge, rebase, stasher=None):
     except ValueError:
         print(YELLOW + "skipped:", "branch has no revisions.")
         return
-    if _is_up_to_date(repo, branch, upstream):
+
+    base = repo.git.merge_base(branch.commit, upstream.commit)
+    if repo.commit(base) == upstream.commit:
         print(BLUE + "up to date", end=".\n")
         return
 
-    if stasher:
-        stasher.clean()
-    branch.checkout()
-    config_attr = "branch.{0}.rebase".format(branch.name)
-    if not merge and (rebase or _read_config(repo, config_attr)):
-        _rebase(repo, upstream.name)
-    else:
-        _merge(repo, upstream.name)
-
-def _update_branches(repo, active, merge, rebase):
-    """Update a list of branches."""
-    if active:
-        _update_branch(repo, active, merge, rebase)
-    branches = set(repo.heads) - {active}
-    if branches:
-        stasher = _Stasher(repo)
+    if is_active:
         try:
-            for branch in sorted(branches, key=lambda b: b.name):
-                _update_branch(repo, branch, merge, rebase, stasher)
-        finally:
-            if active:
-                active.checkout()
-            stasher.restore()
+            repo.git.merge(upstream.name, ff_only=True)
+            print(GREEN + "done", end=".\n")
+        except exc.GitCommandError as err:
+            msg = err.stderr
+            if "local changes" in msg and "would be overwritten" in msg:
+                print(YELLOW + "skipped:", "uncommitted changes.")
+            else:
+                print(YELLOW + "skipped:", "not possible to fast-forward.")
+    else:
+        status = repo.git.merge_base(
+            branch.commit, upstream.commit, is_ancestor=True,
+            with_extended_output=True, with_exceptions=False)[0]
+        if status != 0:
+            print(YELLOW + "skipped:", "not possible to fast-forward.")
+        else:
+            repo.git.branch(branch.name, upstream.name, force=True)
+            print(GREEN + "done", end=".\n")
 
-def _update_repository(repo, current_only=False, rebase=False, merge=False):
+def _update_repository(repo, current_only=False, fetch_only=False):
     """Update a single git repository by fetching remotes and rebasing/merging.
 
     The specific actions depend on the arguments given. We will fetch all
     remotes if *current_only* is ``False``, or only the remote tracked by the
-    current branch if ``True``. By default, we will merge unless
-    ``pull.rebase`` or ``branch.<name>.rebase`` is set in config; *rebase* will
-    cause us to always rebase with ``--preserve-merges``, and *merge* will
-    cause us to always merge.
+    current branch if ``True``. If *fetch_only* is ``False``, we will also
+    update all fast-forwardable branches that are tracking valid upstreams.
     """
     print(INDENT1, BOLD + os.path.split(repo.working_dir)[1] + ":")
 
@@ -246,9 +165,9 @@ def _update_repository(repo, current_only=False, rebase=False, merge=False):
         return
     _fetch_remotes(remotes)
 
-    if not repo.bare:
-        rebase = rebase or _read_config(repo, "pull.rebase")
-        _update_branches(repo, active, merge, rebase)
+    if not fetch_only:
+        for branch in sorted(repo.heads, key=lambda b: b.name):
+            _update_branch(repo, branch, branch == active)
 
 def _update_subdirectories(path, long_name, update_args):
     """Update all subdirectories that are git repos in a given directory."""

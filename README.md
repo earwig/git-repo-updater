@@ -82,14 +82,14 @@ Update all git repositories in your current directory:
     gitup .
 
 By default, gitup will fetch all remotes in a repository. Pass `--current-only`
-(or `-c`) to make it only fetch the remote tracked by the current branch.
+(or `-c`) to make it fetch _only_ the remote tracked by the current branch.
 
-gitup will _merge_ upstream branches by default unless `pull.rebase` or
-`branch.<name>.rebase` is specified in your git config. Pass `--rebase` or `-r`
-to make it always _rebase_ (this is like doing `git pull --rebase=preserve`).
-Pass `--merge` or `-m` to make it always merge.
+Also by default, gitup will try to fast-forward all branches that have
+upstreams configured. It will always skip branches where this is not possible
+(e.g. dirty working directory or a merge/rebase is required). Pass
+`--fetch-only` (or `-f`) to only fetch remotes.
 
-For a list of all command arguments and abbreviations:
+For a full list of all command arguments and abbreviations:
 
     gitup --help
 
