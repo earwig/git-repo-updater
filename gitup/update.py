@@ -237,12 +237,13 @@ def _update_repository(repo, current_only=False, rebase=False, merge=False):
     else:
         remotes = repo.remotes
     if not remotes:
-        print(INDENT2, ERROR, "no remotes configured to pull from.")
+        print(INDENT2, ERROR, "no remotes configured to fetch.")
         return
     rebase = rebase or _read_config(repo, "pull.rebase")
 
     _fetch_remotes(remotes)
-    _update_branches(repo, active, merge, rebase)
+    if not repo.bare:
+        _update_branches(repo, active, merge, rebase)
 
 def _update_subdirectories(path, long_name, update_args):
     """Update all subdirectories that are git repos in a given directory."""
