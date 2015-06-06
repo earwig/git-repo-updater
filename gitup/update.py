@@ -229,20 +229,25 @@ def _update_repository(repo, current_only=False, rebase=False, merge=False):
     except TypeError:  # Happens when HEAD is detached
         active = None
     if current_only:
-        ref = active.tracking_branch() if active else None
+        if not active:
+            print(INDENT2, ERROR,
+                  "--current-only doesn't make sense with a detached HEAD.")
+            return
+        ref = active.tracking_branch()
         if not ref:
             print(INDENT2, ERROR, "no remote tracked by current branch.")
             return
         remotes = [repo.remotes[ref.remote_name]]
     else:
         remotes = repo.remotes
+
     if not remotes:
         print(INDENT2, ERROR, "no remotes configured to fetch.")
         return
-    rebase = rebase or _read_config(repo, "pull.rebase")
-
     _fetch_remotes(remotes)
+
     if not repo.bare:
+        rebase = rebase or _read_config(repo, "pull.rebase")
         _update_branches(repo, active, merge, rebase)
 
 def _update_subdirectories(path, long_name, update_args):
