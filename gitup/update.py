@@ -95,8 +95,7 @@ def _fetch_remotes(remotes):
     for remote in remotes:
         print(INDENT2, "Fetching", BOLD + remote.name, end="")
 
-        config_attr = "remote.{0}.fetch".format(remote.name)
-        if not _read_config(remote.repo, config_attr):
+        if not remote.config_reader.has_option("fetch"):
             print(":", YELLOW + "skipped:", "no configured refspec.")
             continue
 
