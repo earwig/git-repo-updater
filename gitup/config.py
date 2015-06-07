@@ -1,12 +1,16 @@
 # -*- coding: utf-8  -*-
 #
-# Copyright (C) 2011-2014 Ben Kurtovic <ben.kurtovic@gmail.com>
-# See the LICENSE file for details.
+# Copyright (C) 2011-2015 Ben Kurtovic <ben.kurtovic@gmail.com>
+# Released under the terms of the MIT License. See LICENSE for details.
 
 from __future__ import print_function
 
-import ConfigParser as configparser
 import os
+
+try:
+    import configparser
+except ImportError:  # Python 2
+    import ConfigParser as configparser
 
 from colorama import Fore, Style
 
@@ -58,7 +62,7 @@ def get_bookmarks():
     """Get a list of all bookmarks, or an empty list if there are none."""
     config = _load_config_file()
     try:
-        return config.items("bookmarks")
+        return [path for path, _ in config.items("bookmarks")]
     except configparser.NoSectionError:
         return []
 
@@ -119,7 +123,7 @@ def list_bookmarks():
     bookmarks = get_bookmarks()
     if bookmarks:
         print(YELLOW + "Current bookmarks:")
-        for bookmark_path, _ in bookmarks:
+        for bookmark_path in bookmarks:
             print(INDENT1, bookmark_path)
     else:
         print("You have no bookmarks to display.")

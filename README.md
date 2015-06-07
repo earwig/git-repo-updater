@@ -6,13 +6,13 @@ directories, and more, hopefully providing a great way to get everything
 up-to-date for short periods of internet access between long periods of none.
 
 gitup should work on OS X, Linux, and Windows. You should have the latest
-version of git and at least Python 2.7 installed.
+version of git and either Python 2.7 or Python 3 installed.
 
 # Installation
 
 With [Homebrew](http://brew.sh/):
 
-    brew install pr0d1r2/contrib/gitup && brew link gitup
+    brew install gitup
 
 ## From source
 
@@ -82,14 +82,14 @@ Update all git repositories in your current directory:
     gitup .
 
 By default, gitup will fetch all remotes in a repository. Pass `--current-only`
-(or `-c`) to make it only fetch the remote tracked by the current branch.
+(or `-c`) to make it fetch _only_ the remote tracked by the current branch.
 
-gitup will _merge_ upstream branches by default unless `pull.rebase` or
-`branch.<name>.rebase` is specified in git's config. Pass `--rebase` or `-r` to
-make it always _rebase_ (like doing `git pull --rebase=preserve`). Pass
-`--merge` or `-m` to make it always merge.
+Also by default, gitup will try to fast-forward all branches that have
+upstreams configured. It will always skip branches where this is not possible
+(e.g. dirty working directory or a merge/rebase is required). Pass
+`--fetch-only` (or `-f`) to only fetch remotes.
 
-For a list of all command arguments and abbreviations:
+For a full list of all command arguments and abbreviations:
 
     gitup --help
 

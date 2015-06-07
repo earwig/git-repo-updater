@@ -1,0 +1,37 @@
+v0.3 (released June 7, 2015):
+
+- Added support for Python 3.
+- Fixed behavior on bare repositories.
+- Made branch updating code safer in general: only fast-forwardable branches
+  tracking upstreams are updated. This deprecates `--merge` and `--rebase`.
+- Added `--fetch-only` to disable branch updating entirely, if desired.
+- Fixed trying to fetch remotes without configured refspecs.
+- Miscellaneous fixes and tweaks.
+
+v0.2.4 (released May 23, 2015):
+
+- Follow the XDG Base Directory Specification for the config file.
+- Added installation instructions for Homebrew.
+
+v0.2.3 (released March 14, 2015):
+
+- Added support for newer versions of GitPython.
+
+v0.2.2 (released April 27, 2014):
+
+- Fixed an error being raised when HEAD is detached.
+
+v0.2.1 (released April 21, 2014):
+
+- Fixed a bug when handling errors during a fetch.
+
+v0.2 (released April 21, 2014):
+
+- Rewrote backend to use GitPython instead of direct shell calls. Improved
+  stability and fixed various bugs.
+- Use colorama for highlighting instead of ANSI escape codes.
+- Added `--current-only`, `--merge`, and `--rebase` options.
+
+v0.1 (released June 7, 2011):
+
+- Initial release.
