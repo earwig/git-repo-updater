@@ -123,7 +123,7 @@ def list_bookmarks():
     bookmarks = get_bookmarks()
     if bookmarks:
         print(YELLOW + "Current bookmarks:")
-        for bookmark_path, _ in bookmarks:
+        for bookmark_path in bookmarks:
             print(INDENT1, bookmark_path)
     else:
         print("You have no bookmarks to display.")
