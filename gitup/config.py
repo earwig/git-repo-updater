@@ -62,7 +62,7 @@ def get_bookmarks():
     """Get a list of all bookmarks, or an empty list if there are none."""
     config = _load_config_file()
     try:
-        return config.items("bookmarks")
+        return [path for path, _ in config.items("bookmarks")]
     except configparser.NoSectionError:
         return []
 
