@@ -6,7 +6,7 @@ directories, and more, hopefully providing a great way to get everything
 up-to-date for short periods of internet access between long periods of none.
 
 gitup should work on OS X, Linux, and Windows. You should have the latest
-version of git and at least Python 2.7 installed.
+version of git and either Python 2.7 or Python 3 installed.
 
 # Installation
 

@@ -5,8 +5,12 @@
 
 from __future__ import print_function
 
-import ConfigParser as configparser
 import os
+
+try:
+    import configparser
+except ImportError:  # Python 2
+    import ConfigParser as configparser
 
 from colorama import Fore, Style
 
