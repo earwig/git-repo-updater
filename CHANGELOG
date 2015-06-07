@@ -1,4 +1,4 @@
-v0.3 (unreleased):
+v0.3 (released June 7, 2015):
 
 - Added support for Python 3.
 - Fixed behavior on bare repositories.

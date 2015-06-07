@@ -39,8 +39,8 @@ def main():
         '-c', '--current-only', action="store_true", help="""only fetch the
         remote tracked by the current branch instead of all remotes""")
     group_u.add_argument(
-        '-f', '--fetch-only', action="store_true", help="""only fetch remotes,
-        don't try to fast-forward any branches""")
+        '-f', '--fetch-only', action="store_true",
+        help="only fetch remotes, don't try to fast-forward any branches")
 
     group_b.add_argument(
         '-a', '--add', dest="bookmarks_to_add", nargs="+", metavar="path",
