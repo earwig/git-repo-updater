@@ -46,7 +46,7 @@ def _load_config_file():
     _migrate_old_config_path()
     config = configparser.SafeConfigParser()
     # Don't lowercase option names, because we are storing paths there:
-    config.optionxform = str
+    config.optionxform = lambda opt: opt
     config.read(_get_config_path())
     return config
 
@@ -55,7 +55,7 @@ def _save_config_file(config):
     _migrate_old_config_path()
     cfg_path = _get_config_path()
     _ensure_dirs(cfg_path)
-    with open(cfg_path, "wb") as config_file:
+    with open(cfg_path, "w") as config_file:
         config.write(config_file)
 
 def get_bookmarks():
