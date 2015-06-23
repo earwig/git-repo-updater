@@ -53,12 +53,13 @@ class _ProgressMonitor(RemoteProgress):
                 print(str(cur_count), end=end)
 
 
-def _fetch_remotes(remotes):
+def _fetch_remotes(remotes, prune):
     """Fetch a list of remotes, displaying progress info along the way."""
     def _get_name(ref):
         """Return the local name of a remote or tag reference."""
         return ref.remote_head if isinstance(ref, RemoteRef) else ref.name
 
+    # TODO: missing branch deleted (via --prune):
     info = [("NEW_HEAD", "new branch", "new branches"),
             ("NEW_TAG", "new tag", "new tags"),
             ("FAST_FORWARD", "branch update", "branch updates")]
@@ -72,7 +73,7 @@ def _fetch_remotes(remotes):
             continue
 
         try:
-            results = remote.fetch(progress=_ProgressMonitor())
+            results = remote.fetch(progress=_ProgressMonitor(), prune=prune)
         except exc.GitCommandError as err:
             msg = err.command[0].replace("Error when fetching: ", "")
             if not msg.endswith("."):
@@ -101,11 +102,15 @@ def _update_branch(repo, branch, is_active=False):
     if not upstream:
         print(YELLOW + "skipped:", "no upstream is tracked.")
         return
-
     try:
-        branch.commit, upstream.commit
+        branch.commit
     except ValueError:
         print(YELLOW + "skipped:", "branch has no revisions.")
+        return
+    try:
+        upstream.commit
+    except ValueError:
+        print(YELLOW + "skipped:", "upstream does not exist.")
         return
 
     base = repo.git.merge_base(branch.commit, upstream.commit)
@@ -133,13 +138,15 @@ def _update_branch(repo, branch, is_active=False):
             repo.git.branch(branch.name, upstream.name, force=True)
             print(GREEN + "done", end=".\n")
 
-def _update_repository(repo, current_only=False, fetch_only=False):
+def _update_repository(repo, current_only, fetch_only, prune):
     """Update a single git repository by fetching remotes and rebasing/merging.
 
     The specific actions depend on the arguments given. We will fetch all
     remotes if *current_only* is ``False``, or only the remote tracked by the
     current branch if ``True``. If *fetch_only* is ``False``, we will also
     update all fast-forwardable branches that are tracking valid upstreams.
+    If *prune* is ``True``, remote-tracking branches that no longer exist on
+    their remote after fetching will be deleted.
     """
     print(INDENT1, BOLD + os.path.split(repo.working_dir)[1] + ":")
 
@@ -163,7 +170,7 @@ def _update_repository(repo, current_only=False, fetch_only=False):
     if not remotes:
         print(INDENT2, ERROR, "no remotes configured to fetch.")
         return
-    _fetch_remotes(remotes)
+    _fetch_remotes(remotes, prune)
 
     if not fetch_only:
         for branch in sorted(repo.heads, key=lambda b: b.name):

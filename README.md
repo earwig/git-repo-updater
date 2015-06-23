@@ -89,6 +89,10 @@ upstreams configured. It will always skip branches where this is not possible
 (e.g. dirty working directory or a merge/rebase is required). Pass
 `--fetch-only` (or `-f`) to only fetch remotes.
 
+After fetching, gitup will _keep_ remote-tracking branches that no longer exist
+upstream. Pass `--prune` (or `-p`) to delete them, or set `fetch.prune` or
+`remote.<name>.prune` in git config to do this by default.
+
 For a full list of all command arguments and abbreviations:
 
     gitup --help

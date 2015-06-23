@@ -41,6 +41,9 @@ def main():
     group_u.add_argument(
         '-f', '--fetch-only', action="store_true",
         help="only fetch remotes, don't try to fast-forward any branches")
+    group_u.add_argument(
+        '-p', '--prune', action="store_true", help="""after fetching, delete
+        remote-tracking branches that no longer exist on their remote""")
 
     group_b.add_argument(
         '-a', '--add', dest="bookmarks_to_add", nargs="+", metavar="path",
@@ -66,7 +69,7 @@ def main():
 
     color_init(autoreset=True)
     args = parser.parse_args()
-    update_args = args.current_only, args.fetch_only
+    update_args = args.current_only, args.fetch_only, args.prune
 
     print(Style.BRIGHT + "gitup" + Style.RESET_ALL + ": the git-repo-updater")
     print()
