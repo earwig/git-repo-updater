@@ -6,12 +6,13 @@
 from __future__ import print_function
 
 import argparse
+import os
 
 from colorama import init as color_init, Fore, Style
 
 from . import __version__
-from .config import (get_bookmarks, add_bookmarks, delete_bookmarks,
-                     list_bookmarks)
+from .config import (get_default_config_path, get_bookmarks, add_bookmarks,
+                     delete_bookmarks, list_bookmarks)
 from .update import update_bookmarks, update_directories
 
 def main():
@@ -54,6 +55,10 @@ def main():
     group_b.add_argument(
         '-l', '--list', dest="list_bookmarks", action="store_true",
         help="list current bookmarks")
+    group_b.add_argument(
+        '-b', '--bookmark-file', nargs="?", metavar="path",
+        help="use a specific bookmark config file (default: {0})".format(
+            get_default_config_path()))
 
     group_m.add_argument(
         '-h', '--help', action="help", help="show this help message and exit")
@@ -81,21 +86,24 @@ def main():
               "upstream branch and can be safely fast-forwarded. Use "
               "--fetch-only to\navoid updating any branches.\n")
 
+    if args.bookmark_file:
+        args.bookmark_file = os.path.expanduser(args.bookmark_file)
+
     acted = False
     if args.bookmarks_to_add:
-        add_bookmarks(args.bookmarks_to_add)
+        add_bookmarks(args.bookmarks_to_add, args.bookmark_file)
         acted = True
     if args.bookmarks_to_del:
-        delete_bookmarks(args.bookmarks_to_del)
+        delete_bookmarks(args.bookmarks_to_del, args.bookmark_file)
         acted = True
     if args.list_bookmarks:
-        list_bookmarks()
+        list_bookmarks(args.bookmark_file)
         acted = True
     if args.directories_to_update:
         update_directories(args.directories_to_update, update_args)
         acted = True
     if args.update or not acted:
-        update_bookmarks(get_bookmarks(), update_args)
+        update_bookmarks(get_bookmarks(args.bookmark_file), update_args)
 
 def run():
     """Thin wrapper for main() that catches KeyboardInterrupts."""

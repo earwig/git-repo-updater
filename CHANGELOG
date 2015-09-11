@@ -2,6 +2,7 @@ v0.3.1 (unreleased):
 
 - Added a `--prune` flag to delete remote-tracking branches that no longer
   exist on their remote after fetching.
+- Added a '--bookmark-file' option to support multiple bookmark config files.
 - Fixed a bug related to Python 3 compatibility.
 
 v0.3 (released June 7, 2015):
