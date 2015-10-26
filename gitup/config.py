@@ -39,7 +39,7 @@ def _migrate_old_config_path():
 def _load_config_file(config_path=None):
     """Read the config file and return a SafeConfigParser() object."""
     _migrate_old_config_path()
-    config = configparser.SafeConfigParser()
+    config = configparser.SafeConfigParser(delimiters='=')
     # Don't lowercase option names, because we are storing paths there:
     config.optionxform = lambda opt: opt
     config.read(config_path or get_default_config_path())
