@@ -8,9 +8,11 @@ from __future__ import print_function
 import os
 
 try:
-    import configparser
+    from configparser import ConfigParser, NoSectionError
+    py3k = True
 except ImportError:  # Python 2
-    import ConfigParser as configparser
+    from ConfigParser import SafeConfigParser as ConfigParser, NoSectionError
+    py3k = False
 
 from colorama import Fore, Style
 
@@ -37,9 +39,12 @@ def _migrate_old_config_path():
         os.rename(old_path, new_path)
 
 def _load_config_file(config_path=None):
-    """Read the config file and return a SafeConfigParser() object."""
+    """Read the config file and return a config parser object."""
     _migrate_old_config_path()
-    config = configparser.SafeConfigParser(delimiters='=')
+    if py3k:
+        config = ConfigParser(delimiters='=')
+    else:
+        config = ConfigParser()
     # Don't lowercase option names, because we are storing paths there:
     config.optionxform = lambda opt: opt
     config.read(config_path or get_default_config_path())
@@ -63,7 +68,7 @@ def get_bookmarks(config_path=None):
     config = _load_config_file(config_path)
     try:
         return [path for path, _ in config.items("bookmarks")]
-    except configparser.NoSectionError:
+    except NoSectionError:
         return []
 
 def add_bookmarks(paths, config_path=None):
