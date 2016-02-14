@@ -7,14 +7,9 @@ from __future__ import print_function
 
 import os
 
-try:
-    from configparser import ConfigParser, NoSectionError
-    py3k = True
-except ImportError:  # Python 2
-    from ConfigParser import SafeConfigParser as ConfigParser, NoSectionError
-    py3k = False
-
 from colorama import Fore, Style
+
+from .migrate import run_migrations
 
 __all__ = ["get_default_config_path", "get_bookmarks", "add_bookmarks",
            "delete_bookmarks", "list_bookmarks"]
@@ -30,61 +25,45 @@ def _ensure_dirs(path):
     if dirname and not os.path.exists(dirname):  # Race condition, meh...
         os.makedirs(dirname)
 
-def _migrate_old_config_path():
-    """Migrate the old config location (~/.gitup) to the new one."""
-    old_path = os.path.expanduser(os.path.join("~", ".gitup"))
-    if os.path.exists(old_path):
-        new_path = get_default_config_path()
-        _ensure_dirs(new_path)
-        os.rename(old_path, new_path)
-
 def _load_config_file(config_path=None):
     """Read the config file and return a config parser object."""
-    _migrate_old_config_path()
-    if py3k:
-        config = ConfigParser(delimiters='=')
-    else:
-        config = ConfigParser()
-    # Don't lowercase option names, because we are storing paths there:
-    config.optionxform = lambda opt: opt
-    config.read(config_path or get_default_config_path())
-    return config
+    run_migrations()
+    cfg_path = config_path or get_default_config_path()
+
+    try:
+        with open(cfg_path, "rb") as config_file:
+            return config_file.read().split("\n")
+    except IOError:
+        return []
 
 def _save_config_file(config, config_path=None):
     """Save config changes to the given config file."""
-    _migrate_old_config_path()
+    run_migrations()
     cfg_path = config_path or get_default_config_path()
     _ensure_dirs(cfg_path)
-    with open(cfg_path, "w") as config_file:
-        config.write(config_file)
+
+    with open(cfg_path, "wb") as config_file:
+        config_file.write("\n".join(config))
 
 def get_default_config_path():
     """Return the default path to the configuration file."""
     xdg_cfg = os.environ.get("XDG_CONFIG_HOME") or os.path.join("~", ".config")
-    return os.path.join(os.path.expanduser(xdg_cfg), "gitup", "config.ini")
+    return os.path.join(os.path.expanduser(xdg_cfg), "gitup", "bookmarks")
 
 def get_bookmarks(config_path=None):
     """Get a list of all bookmarks, or an empty list if there are none."""
-    config = _load_config_file(config_path)
-    try:
-        return [path for path, _ in config.items("bookmarks")]
-    except NoSectionError:
-        return []
+    return _load_config_file(config_path)
 
 def add_bookmarks(paths, config_path=None):
     """Add a list of paths as bookmarks to the config file."""
     config = _load_config_file(config_path)
-    if not config.has_section("bookmarks"):
-        config.add_section("bookmarks")
-
     added, exists = [], []
     for path in paths:
         path = os.path.abspath(path)
-        if config.has_option("bookmarks", path):
+        if path in config:
             exists.append(path)
         else:
-            path_name = os.path.split(path)[1]
-            config.set("bookmarks", path, path_name)
+            config.append(path)
             added.append(path)
     _save_config_file(config, config_path)
 
@@ -102,11 +81,11 @@ def delete_bookmarks(paths, config_path=None):
     config = _load_config_file(config_path)
 
     deleted, notmarked = [], []
-    if config.has_section("bookmarks"):
+    if config:
         for path in paths:
             path = os.path.abspath(path)
-            config_was_changed = config.remove_option("bookmarks", path)
-            if config_was_changed:
+            if path in config:
+                config.remove(path)
                 deleted.append(path)
             else:
                 notmarked.append(path)

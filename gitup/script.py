@@ -21,7 +21,7 @@ def main():
         description="Easily update multiple git repositories at once.",
         epilog="""
             Both relative and absolute paths are accepted by all arguments.
-            Direct bug reports and feature requests to:
+            Direct bug reports and feature requests to
             https://github.com/earwig/git-repo-updater.""",
         add_help=False)
 
