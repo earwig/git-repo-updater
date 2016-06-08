@@ -26,12 +26,12 @@ def _ensure_dirs(path):
         os.makedirs(dirname)
 
 def _load_config_file(config_path=None):
-    """Read the config file and return a config parser object."""
+    """Read the config file and return a list of bookmarks."""
     run_migrations()
     cfg_path = config_path or get_default_config_path()
 
     try:
-        with open(cfg_path, "rb") as config_file:
+        with open(cfg_path, "r") as config_file:
             return config_file.read().split("\n")
     except IOError:
         return []
@@ -42,7 +42,7 @@ def _save_config_file(config, config_path=None):
     cfg_path = config_path or get_default_config_path()
     _ensure_dirs(cfg_path)
 
-    with open(cfg_path, "wb") as config_file:
+    with open(cfg_path, "w") as config_file:
         config_file.write("\n".join(config))
 
 def get_default_config_path():
