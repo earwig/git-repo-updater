@@ -14,7 +14,7 @@ from colorama import init as color_init, Fore, Style
 from . import __version__
 from .config import (get_default_config_path, get_bookmarks, add_bookmarks,
                      delete_bookmarks, list_bookmarks, clean_bookmarks)
-from .update import update_bookmarks, update_directories
+from .update import update_bookmarks, update_directories, run_command
 
 def _decode(path):
     """Decode the given string using the system's filesystem encoding."""
@@ -34,6 +34,7 @@ def main():
 
     group_u = parser.add_argument_group("updating repositories")
     group_b = parser.add_argument_group("bookmarking")
+    group_a = parser.add_argument_group("advanced")
     group_m = parser.add_argument_group("miscellaneous")
 
     group_u.add_argument(
@@ -70,6 +71,10 @@ def main():
         '-b', '--bookmark-file', nargs="?", metavar="path", type=_decode,
         help="use a specific bookmark config file (default: {0})".format(
             get_default_config_path()))
+
+    group_a.add_argument(
+        '-e', '--exec', '--batch', dest="command", metavar="command",
+        help="run a shell command on all repos")
 
     group_m.add_argument(
         '-h', '--help', action="help", help="show this help message and exit")
@@ -113,11 +118,18 @@ def main():
     if args.clean_bookmarks:
         clean_bookmarks(args.bookmark_file)
         acted = True
-    if args.directories_to_update:
-        update_directories(args.directories_to_update, update_args)
-        acted = True
-    if args.update or not acted:
-        update_bookmarks(get_bookmarks(args.bookmark_file), update_args)
+
+    if args.command:
+        if args.directories_to_update:
+            run_command(args.directories_to_update, args.command)
+        if args.update or not args.directories_to_update:
+            run_command(get_bookmarks(args.bookmark_file), args.command)
+    else:
+        if args.directories_to_update:
+            update_directories(args.directories_to_update, update_args)
+            acted = True
+        if args.update or not acted:
+            update_bookmarks(get_bookmarks(args.bookmark_file), update_args)
 
 def run():
     """Thin wrapper for main() that catches KeyboardInterrupts."""
