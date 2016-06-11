@@ -3,8 +3,6 @@
 # Copyright (C) 2011-2016 Ben Kurtovic <ben.kurtovic@gmail.com>
 # Released under the terms of the MIT License. See LICENSE for details.
 
-__all__ = ["run_migrations"]
-
 import os
 
 try:
@@ -13,6 +11,8 @@ try:
 except ImportError:  # Python 2
     from ConfigParser import SafeConfigParser as ConfigParser, NoSectionError
     PY3K = False
+
+__all__ = ["run_migrations"]
 
 def _get_old_path():
     """Return the old default path to the configuration file."""
@@ -45,12 +45,14 @@ def _migrate_old_format():
         bookmarks = [path for path, _ in config.items("bookmarks")]
     except NoSectionError:
         bookmarks = []
+    if PY3K:
+        bookmarks = [path.encode("utf8") for path in bookmarks]
 
     new_path = os.path.join(os.path.split(old_path)[0], "bookmarks")
     os.rename(old_path, new_path)
 
     with open(new_path, "wb") as handle:
-        handle.write("\n".join(bookmarks))
+        handle.write(b"\n".join(bookmarks))
 
 def run_migrations():
     """Run any necessary migrations to ensure the config file is up-to-date."""

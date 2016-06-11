@@ -7,6 +7,7 @@ from __future__ import print_function
 
 import argparse
 import os
+import sys
 
 from colorama import init as color_init, Fore, Style
 
@@ -14,6 +15,12 @@ from . import __version__
 from .config import (get_default_config_path, get_bookmarks, add_bookmarks,
                      delete_bookmarks, list_bookmarks)
 from .update import update_bookmarks, update_directories
+
+def _decode(path):
+    """Decode the given string using the system's filesystem encoding."""
+    if sys.version_info.major > 2:
+        return path
+    return path.decode(sys.getfilesystemencoding())
 
 def main():
     """Parse arguments and then call the appropriate function(s)."""
@@ -30,7 +37,7 @@ def main():
     group_m = parser.add_argument_group("miscellaneous")
 
     group_u.add_argument(
-        'directories_to_update', nargs="*", metavar="path",
+        'directories_to_update', nargs="*", metavar="path", type=_decode,
         help="""update all repositories in this directory (or the directory
                 itself, if it is a repo)""")
     group_u.add_argument(
@@ -48,15 +55,16 @@ def main():
 
     group_b.add_argument(
         '-a', '--add', dest="bookmarks_to_add", nargs="+", metavar="path",
-        help="add directory(s) as bookmarks")
+        type=_decode, help="add directory(s) as bookmarks")
     group_b.add_argument(
         '-d', '--delete', dest="bookmarks_to_del", nargs="+", metavar="path",
+        type=_decode,
         help="delete bookmark(s) (leaves actual directories alone)")
     group_b.add_argument(
         '-l', '--list', dest="list_bookmarks", action="store_true",
         help="list current bookmarks")
     group_b.add_argument(
-        '-b', '--bookmark-file', nargs="?", metavar="path",
+        '-b', '--bookmark-file', nargs="?", metavar="path", type=_decode,
         help="use a specific bookmark config file (default: {0})".format(
             get_default_config_path()))
 

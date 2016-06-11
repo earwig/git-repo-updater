@@ -31,19 +31,21 @@ def _load_config_file(config_path=None):
     cfg_path = config_path or get_default_config_path()
 
     try:
-        with open(cfg_path, "r") as config_file:
-            return config_file.read().split("\n")
+        with open(cfg_path, "rb") as config_file:
+            paths = config_file.read().split(b"\n")
+        return [path.decode("utf8") for path in paths]
     except IOError:
         return []
 
-def _save_config_file(config, config_path=None):
-    """Save config changes to the given config file."""
+def _save_config_file(bookmarks, config_path=None):
+    """Save the bookmarks list to the given config file."""
     run_migrations()
     cfg_path = config_path or get_default_config_path()
     _ensure_dirs(cfg_path)
 
-    with open(cfg_path, "w") as config_file:
-        config_file.write("\n".join(config))
+    dump = b"\n".join(path.encode("utf8") for path in bookmarks)
+    with open(cfg_path, "wb") as config_file:
+        config_file.write(dump)
 
 def get_default_config_path():
     """Return the default path to the configuration file."""

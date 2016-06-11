@@ -6,6 +6,7 @@ v0.3.1 (unreleased):
 - Cleaned up the bookmark file format, fixing a related Windows bug. The script
   will automatically migrate to the new one.
 - Fixed a bug related to Python 3 compatibility.
+- Fixed unicode support.
 
 v0.3 (released June 7, 2015):
 
