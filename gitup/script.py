@@ -13,7 +13,7 @@ from colorama import init as color_init, Fore, Style
 
 from . import __version__
 from .config import (get_default_config_path, get_bookmarks, add_bookmarks,
-                     delete_bookmarks, list_bookmarks)
+                     delete_bookmarks, list_bookmarks, clean_bookmarks)
 from .update import update_bookmarks, update_directories
 
 def _decode(path):
@@ -64,6 +64,9 @@ def main():
         '-l', '--list', dest="list_bookmarks", action="store_true",
         help="list current bookmarks")
     group_b.add_argument(
+        '-e', '--clean', '--cleanup', dest="clean_bookmarks",
+        action="store_true", help="delete any bookmarks that don't exist")
+    group_b.add_argument(
         '-b', '--bookmark-file', nargs="?", metavar="path", type=_decode,
         help="use a specific bookmark config file (default: {0})".format(
             get_default_config_path()))
@@ -106,6 +109,9 @@ def main():
         acted = True
     if args.list_bookmarks:
         list_bookmarks(args.bookmark_file)
+        acted = True
+    if args.clean_bookmarks:
+        clean_bookmarks(args.bookmark_file)
         acted = True
     if args.directories_to_update:
         update_directories(args.directories_to_update, update_args)

@@ -12,7 +12,7 @@ from colorama import Fore, Style
 from .migrate import run_migrations
 
 __all__ = ["get_default_config_path", "get_bookmarks", "add_bookmarks",
-           "delete_bookmarks", "list_bookmarks"]
+           "delete_bookmarks", "list_bookmarks", "clean_bookmarks"]
 
 YELLOW = Fore.YELLOW + Style.BRIGHT
 RED = Fore.RED + Style.BRIGHT
@@ -106,10 +106,27 @@ def delete_bookmarks(paths, config_path=None):
 
 def list_bookmarks(config_path=None):
     """Print all of our current bookmarks."""
-    bookmarks = get_bookmarks(config_path=config_path)
+    bookmarks = _load_config_file(config_path)
     if bookmarks:
         print(YELLOW + "Current bookmarks:")
         for bookmark_path in bookmarks:
             print(INDENT1, bookmark_path)
     else:
         print("You have no bookmarks to display.")
+
+def clean_bookmarks(config_path=None):
+    """Delete any bookmarks that don't exist."""
+    bookmarks = _load_config_file(config_path)
+    if not bookmarks:
+        return
+
+    delete = [path for path in bookmarks if not os.path.isdir(path)]
+    if not delete:
+        return
+
+    bookmarks = [path for path in bookmarks if path not in delete]
+    _save_config_file(bookmarks, config_path)
+
+    print(YELLOW + "Deleted bookmarks:")
+    for path in delete:
+        print(INDENT1, path)
