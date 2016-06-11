@@ -4,7 +4,7 @@ v0.4 (unreleased):
   exist on their remote after fetching.
 - Added a `--bookmark-file` flag to support multiple bookmark config files.
 - Added a `--cleanup` flag to remove old bookmarks that don't exist.
-- Added an `--execute` flag to run a shell command on all of your repos.
+- Added an `--exec` flag to run a shell command on all of your repos.
 - Cleaned up the bookmark file format, fixing a related Windows bug. The script
   will automatically migrate to the new one.
 - Fixed a bug related to Python 3 compatibility.
