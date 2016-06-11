@@ -32,7 +32,7 @@ def _load_config_file(config_path=None):
 
     try:
         with open(cfg_path, "rb") as config_file:
-            paths = config_file.read().split(b"\n")
+            paths = config_file.read().strip().split(b"\n")
         return [path.decode("utf8") for path in paths]
     except IOError:
         return []
@@ -118,10 +118,12 @@ def clean_bookmarks(config_path=None):
     """Delete any bookmarks that don't exist."""
     bookmarks = _load_config_file(config_path)
     if not bookmarks:
+        print("You have no bookmarks to clean up.")
         return
 
     delete = [path for path in bookmarks if not os.path.isdir(path)]
     if not delete:
+        print("All of your bookmarks are valid.")
         return
 
     bookmarks = [path for path in bookmarks if path not in delete]

@@ -64,7 +64,7 @@ def main():
         '-l', '--list', dest="list_bookmarks", action="store_true",
         help="list current bookmarks")
     group_b.add_argument(
-        '-e', '--clean', '--cleanup', dest="clean_bookmarks",
+        '-n', '--clean', '--cleanup', dest="clean_bookmarks",
         action="store_true", help="delete any bookmarks that don't exist")
     group_b.add_argument(
         '-b', '--bookmark-file', nargs="?", metavar="path", type=_decode,
