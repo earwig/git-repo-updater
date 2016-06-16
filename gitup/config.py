@@ -32,10 +32,11 @@ def _load_config_file(config_path=None):
 
     try:
         with open(cfg_path, "rb") as config_file:
-            paths = config_file.read().strip().split(b"\n")
-        return [path.decode("utf8") for path in paths]
+            paths = config_file.read().split(b"\n")
     except IOError:
         return []
+    paths = [path.decode("utf8").strip() for path in paths]
+    return [path for path in paths if path]
 
 def _save_config_file(bookmarks, config_path=None):
     """Save the bookmarks list to the given config file."""
