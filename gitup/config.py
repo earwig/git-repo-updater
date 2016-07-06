@@ -62,7 +62,7 @@ def add_bookmarks(paths, config_path=None):
     config = _load_config_file(config_path)
     added, exists = [], []
     for path in paths:
-        path = os.path.abspath(path)
+        path = os.path.normcase(os.path.abspath(path))
         if path in config:
             exists.append(path)
         else:
@@ -86,7 +86,7 @@ def delete_bookmarks(paths, config_path=None):
     deleted, notmarked = [], []
     if config:
         for path in paths:
-            path = os.path.abspath(path)
+            path = os.path.normcase(os.path.abspath(path))
             if path in config:
                 config.remove(path)
                 deleted.append(path)
