@@ -5,6 +5,7 @@
 
 from __future__ import print_function
 
+from glob import glob
 import os
 
 from colorama import Fore, Style
@@ -48,6 +49,12 @@ def _save_config_file(bookmarks, config_path=None):
     with open(cfg_path, "wb") as config_file:
         config_file.write(dump)
 
+def _normalize_path(path):
+    """Normalize the given path."""
+    if path.startswith("~"):
+        return os.path.normcase(os.path.normpath(path))
+    return os.path.normcase(os.path.abspath(path))
+
 def get_default_config_path():
     """Return the default path to the configuration file."""
     xdg_cfg = os.environ.get("XDG_CONFIG_HOME") or os.path.join("~", ".config")
@@ -60,9 +67,10 @@ def get_bookmarks(config_path=None):
 def add_bookmarks(paths, config_path=None):
     """Add a list of paths as bookmarks to the config file."""
     config = _load_config_file(config_path)
+    paths = [_normalize_path(path) for path in paths]
+
     added, exists = [], []
     for path in paths:
-        path = os.path.normcase(os.path.abspath(path))
         if path in config:
             exists.append(path)
         else:
@@ -82,11 +90,11 @@ def add_bookmarks(paths, config_path=None):
 def delete_bookmarks(paths, config_path=None):
     """Remove a list of paths from the bookmark config file."""
     config = _load_config_file(config_path)
+    paths = [_normalize_path(path) for path in paths]
 
     deleted, notmarked = [], []
     if config:
         for path in paths:
-            path = os.path.normcase(os.path.abspath(path))
             if path in config:
                 config.remove(path)
                 deleted.append(path)
@@ -94,7 +102,7 @@ def delete_bookmarks(paths, config_path=None):
                 notmarked.append(path)
         _save_config_file(config, config_path)
     else:
-        notmarked = [os.path.abspath(path) for path in paths]
+        notmarked = paths
 
     if deleted:
         print(YELLOW + "Deleted bookmarks:")
@@ -122,7 +130,8 @@ def clean_bookmarks(config_path=None):
         print("You have no bookmarks to clean up.")
         return
 
-    delete = [path for path in bookmarks if not os.path.isdir(path)]
+    delete = [path for path in bookmarks
+              if not (os.path.isdir(path) or glob(os.path.expanduser(path)))]
     if not delete:
         print("All of your bookmarks are valid.")
         return

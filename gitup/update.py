@@ -5,6 +5,7 @@
 
 from __future__ import print_function
 
+from glob import glob
 import os
 import shlex
 
@@ -192,18 +193,20 @@ def _run_command(repo, command):
     for line in out[1].splitlines() + out[2].splitlines():
         print(INDENT2, line)
 
-def _dispatch_to_subdirs(path, callback, *args):
-    """Apply the callback to all git repo subdirectories in the directory."""
+def _dispatch_multi(base, paths, callback, *args):
+    """Apply the callback to all git repos in the list of paths."""
     repos = []
-    for item in os.listdir(path):
+    for path in paths:
         try:
-            repo = Repo(os.path.join(path, item))
+            repo = Repo(path)
         except (exc.InvalidGitRepositoryError, exc.NoSuchPathError):
             continue
         repos.append(repo)
 
+    base = os.path.abspath(base)
     suffix = "" if len(repos) == 1 else "s"
-    print(BOLD + path, "({0} repo{1}):".format(len(repos), suffix))
+    print(BOLD + base, "({0} repo{1}):".format(len(repos), suffix))
+
     for repo in sorted(repos, key=lambda r: os.path.split(r.working_dir)[1]):
         callback(repo, *args)
 
@@ -211,19 +214,25 @@ def _dispatch(path, callback, *args):
     """Apply a callback function on each valid repo in the given path.
 
     Determine whether the directory is a git repo on its own, a directory of
-    git repositories, or something invalid. If the first, apply the callback on
-    it; if the second, apply the callback on all repositories contained within;
-    if the third, print an error.
+    git repositories, a shell glob pattern, or something invalid. If the first,
+    apply the callback on it; if the second or third, apply the callback on all
+    repositories contained within; if the last, print an error.
 
     The given args are passed directly to the callback function after the repo.
     """
+    path = os.path.expanduser(path)
     try:
         repo = Repo(path)
     except exc.NoSuchPathError:
-        print(ERROR, BOLD + path, "doesn't exist!")
+        paths = glob(path)
+        if paths:
+            _dispatch_multi(path, paths, callback, *args)
+        else:
+            print(ERROR, BOLD + path, "doesn't exist!")
     except exc.InvalidGitRepositoryError:
         if os.path.isdir(path):
-            _dispatch_to_subdirs(path, callback, *args)
+            paths = [os.path.join(path, item) for item in os.listdir(path)]
+            _dispatch_multi(path, paths, callback, *args)
         else:
             print(ERROR, BOLD + path, "isn't a repository!")
     else:
@@ -232,20 +241,19 @@ def _dispatch(path, callback, *args):
 
 def update_bookmarks(bookmarks, update_args):
     """Loop through and update all bookmarks."""
-    if bookmarks:
-        for path in bookmarks:
-            _dispatch(path, _update_repository, *update_args)
-    else:
+    if not bookmarks:
         print("You don't have any bookmarks configured! Get help with 'gitup -h'.")
+        return
+
+    for path in bookmarks:
+        _dispatch(path, _update_repository, *update_args)
 
 def update_directories(paths, update_args):
     """Update a list of directories supplied by command arguments."""
     for path in paths:
-        full_path = os.path.abspath(path)
-        _dispatch(full_path, _update_repository, *update_args)
+        _dispatch(path, _update_repository, *update_args)
 
 def run_command(paths, command):
     """Run an arbitrary shell command on all repos."""
     for path in paths:
-        full_path = os.path.abspath(path)
-        _dispatch(full_path, _run_command, command)
+        _dispatch(path, _run_command, command)
