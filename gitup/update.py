@@ -195,20 +195,20 @@ def _run_command(repo, command):
 
 def _dispatch_multi(base, paths, callback, *args):
     """Apply the callback to all git repos in the list of paths."""
-    repos = []
+    valid = []
     for path in paths:
         try:
-            repo = Repo(path)
+            Repo(path)
         except (exc.InvalidGitRepositoryError, exc.NoSuchPathError):
             continue
-        repos.append(repo)
+        valid.append(path)
 
     base = os.path.abspath(base)
-    suffix = "" if len(repos) == 1 else "s"
-    print(BOLD + base, "({0} repo{1}):".format(len(repos), suffix))
+    suffix = "" if len(valid) == 1 else "s"
+    print(BOLD + base, "({0} repo{1}):".format(len(valid), suffix))
 
-    for repo in sorted(repos, key=lambda r: os.path.split(r.working_dir)[1]):
-        callback(repo, *args)
+    for path in sorted(valid, key=os.path.basename):
+        callback(Repo(path), *args)
 
 def _dispatch(path, callback, *args):
     """Apply a callback function on each valid repo in the given path.
