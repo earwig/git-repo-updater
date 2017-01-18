@@ -1,3 +1,7 @@
+v0.5 (unreleased):
+
+- ...
+
 v0.4 (released January 17, 2017):
 
 - Added a `--prune` flag to delete remote-tracking branches that no longer
