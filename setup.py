@@ -1,6 +1,6 @@
 # -*- coding: utf-8  -*-
 #
-# Copyright (C) 2011-2015 Ben Kurtovic <ben.kurtovic@gmail.com>
+# Copyright (C) 2011-2016 Ben Kurtovic <ben.kurtovic@gmail.com>
 # Released under the terms of the MIT License. See LICENSE for details.
 
 import sys
@@ -19,7 +19,7 @@ setup(
     name = "gitup",
     packages = find_packages(),
     entry_points = {"console_scripts": ["gitup = gitup.script:run"]},
-    install_requires = ["GitPython >= 1.0.1", "colorama >= 0.3.3"],
+    install_requires = ["GitPython >= 2.1.1", "colorama >= 0.3.7"],
     version = __version__,
     author = "Ben Kurtovic",
     author_email = "ben.kurtovic@gmail.com",
@@ -43,6 +43,7 @@ setup(
         "Programming Language :: Python :: 3.3",
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
         "Topic :: Software Development :: Version Control"
     ]
 )
