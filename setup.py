@@ -19,7 +19,7 @@ setup(
     name = "gitup",
     packages = find_packages(),
     entry_points = {"console_scripts": ["gitup = gitup.script:run"]},
-    install_requires = ["GitPython >= 2.1.1", "colorama >= 0.3.7"],
+    install_requires = ["GitPython >= 2.1.8", "colorama >= 0.3.9"],
     version = __version__,
     author = "Ben Kurtovic",
     author_email = "ben.kurtovic@gmail.com",
