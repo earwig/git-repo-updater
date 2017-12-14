@@ -1,6 +1,6 @@
-v0.5 (unreleased):
+v0.4.1 (released December 13, 2017):
 
-- ...
+- Bump dependencies to deal with newer versions of Git.
 
 v0.4 (released January 17, 2017):
 
