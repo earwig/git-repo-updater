@@ -200,6 +200,11 @@ def _dispatch_multi(base, paths, callback, *args):
         try:
             Repo(path)
         except (exc.InvalidGitRepositoryError, exc.NoSuchPathError):
+            if os.path.isdir(path):
+                paths = [os.path.join(path, item) for item in os.listdir(path)]
+                _dispatch_multi(path, paths, callback, *args)
+            else:
+                print(ERROR, BOLD + path, "isn't a repository!")
             continue
         valid.append(path)
 
