@@ -1,3 +1,10 @@
+v0.5 (unreleased):
+
+- Improved repository detection when passed a directory that contains repos:
+  will now traverse through subdirectories automatically.
+- Fixed an error when updating branches if the upstream is completely unrelated
+  from the local branch (no common ancestor).
+
 v0.4.1 (released December 13, 2017):
 
 - Bump dependencies to deal with newer versions of Git.

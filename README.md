@@ -51,7 +51,8 @@ Additionally, you can just type:
 
     gitup ~/repos
 
-to automatically update all git repositories in that directory.
+to automatically update all git repositories in that directory and its
+subdirectories.
 
 To add a bookmark (or bookmarks), either of these will work:
 
@@ -82,16 +83,16 @@ Update all git repositories in your current directory:
     gitup .
 
 By default, gitup will fetch all remotes in a repository. Pass `--current-only`
-(or `-c`) to make it fetch _only_ the remote tracked by the current branch.
+(or `-c`) to make it fetch only the remote tracked by the current branch.
 
 Also by default, gitup will try to fast-forward all branches that have
 upstreams configured. It will always skip branches where this is not possible
 (e.g. dirty working directory or a merge/rebase is required). Pass
-`--fetch-only` (or `-f`) to only fetch remotes.
+`--fetch-only` (or `-f`) to skip this step and only fetch remotes.
 
 After fetching, gitup will _keep_ remote-tracking branches that no longer exist
 upstream. Pass `--prune` (or `-p`) to delete them, or set `fetch.prune` or
-`remote.<name>.prune` in git config to do this by default.
+`remote.<name>.prune` in your git config to do this by default.
 
 For a full list of all command arguments and abbreviations:
 

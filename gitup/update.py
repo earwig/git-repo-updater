@@ -1,6 +1,6 @@
 # -*- coding: utf-8  -*-
 #
-# Copyright (C) 2011-2016 Ben Kurtovic <ben.kurtovic@gmail.com>
+# Copyright (C) 2011-2018 Ben Kurtovic <ben.kurtovic@gmail.com>
 # Released under the terms of the MIT License. See LICENSE for details.
 
 from __future__ import print_function
@@ -115,7 +115,12 @@ def _update_branch(repo, branch, is_active=False):
         print(YELLOW + "skipped:", "upstream does not exist.")
         return
 
-    base = repo.git.merge_base(branch.commit, upstream.commit)
+    try:
+        base = repo.git.merge_base(branch.commit, upstream.commit)
+    except exc.GitCommandError as err:
+        print(YELLOW + "skipped:", "can't find merge base with upstream.")
+        return
+
     if repo.commit(base) == upstream.commit:
         print(BLUE + "up to date", end=".\n")
         return
@@ -140,7 +145,7 @@ def _update_branch(repo, branch, is_active=False):
             repo.git.branch(branch.name, upstream.name, force=True)
             print(GREEN + "done", end=".\n")
 
-def _update_repository(repo, current_only, fetch_only, prune):
+def _update_repository(repo, repo_name, current_only, fetch_only, prune):
     """Update a single git repository by fetching remotes and rebasing/merging.
 
     The specific actions depend on the arguments given. We will fetch all
@@ -150,7 +155,7 @@ def _update_repository(repo, current_only, fetch_only, prune):
     If *prune* is ``True``, remote-tracking branches that no longer exist on
     their remote after fetching will be deleted.
     """
-    print(INDENT1, BOLD + os.path.split(repo.working_dir)[1] + ":")
+    print(INDENT1, BOLD + repo_name + ":")
 
     try:
         active = repo.active_branch
@@ -178,9 +183,9 @@ def _update_repository(repo, current_only, fetch_only, prune):
         for branch in sorted(repo.heads, key=lambda b: b.name):
             _update_branch(repo, branch, branch == active)
 
-def _run_command(repo, command):
+def _run_command(repo, repo_name, command):
     """Run an arbitrary shell command on the given repository."""
-    print(INDENT1, BOLD + os.path.split(repo.working_dir)[1] + ":")
+    print(INDENT1, BOLD + repo_name + ":")
 
     cmd = shlex.split(command)
     try:
@@ -193,24 +198,7 @@ def _run_command(repo, command):
     for line in out[1].splitlines() + out[2].splitlines():
         print(INDENT2, line)
 
-def _dispatch_multi(base, paths, callback, *args):
-    """Apply the callback to all git repos in the list of paths."""
-    valid = []
-    for path in paths:
-        try:
-            Repo(path)
-        except (exc.InvalidGitRepositoryError, exc.NoSuchPathError):
-            continue
-        valid.append(path)
-
-    base = os.path.abspath(base)
-    suffix = "" if len(valid) == 1 else "s"
-    print(BOLD + base, "({0} repo{1}):".format(len(valid), suffix))
-
-    for path in sorted(valid, key=os.path.basename):
-        callback(Repo(path), *args)
-
-def _dispatch(path, callback, *args):
+def _dispatch(base_path, callback, *args):
     """Apply a callback function on each valid repo in the given path.
 
     Determine whether the directory is a git repo on its own, a directory of
@@ -220,24 +208,61 @@ def _dispatch(path, callback, *args):
 
     The given args are passed directly to the callback function after the repo.
     """
-    path = os.path.expanduser(path)
+    def _collect(paths, maxdepth=6):
+        """Return all valid repo paths in the given paths, recursively."""
+        if maxdepth <= 0:
+            return []
+
+        valid = []
+        for path in paths:
+            try:
+                Repo(path)
+                valid.append(path)
+            except exc.InvalidGitRepositoryError:
+                if not os.path.isdir(path):
+                    continue
+                children = [os.path.join(path, it) for it in os.listdir(path)]
+                valid += _collect(children, maxdepth=maxdepth-1)
+            except exc.NoSuchPathError:
+                continue
+        return valid
+
+    def _get_basename(base, path):
+        """Return a reasonable name for a repo path in the given base."""
+        if path.startswith(base + os.path.sep):
+            return path.split(base + os.path.sep, 1)[1]
+        prefix = os.path.commonprefix([base, path])
+        while not base.startswith(prefix + os.path.sep):
+            old = prefix
+            prefix = os.path.split(prefix)[0]
+            if prefix == old:
+                break  # Prevent infinite loop, but should be almost impossible
+        return path.split(prefix + os.path.sep, 1)[1]
+
+    base = os.path.expanduser(base_path)
     try:
-        repo = Repo(path)
+        Repo(base)
+        valid = [base]
     except exc.NoSuchPathError:
-        paths = glob(path)
-        if paths:
-            _dispatch_multi(path, paths, callback, *args)
-        else:
-            print(ERROR, BOLD + path, "doesn't exist!")
+        paths = glob(base)
+        if not paths:
+            print(ERROR, BOLD + base, "doesn't exist!")
+            return
+        valid = _collect(paths)
     except exc.InvalidGitRepositoryError:
-        if os.path.isdir(path):
-            paths = [os.path.join(path, item) for item in os.listdir(path)]
-            _dispatch_multi(path, paths, callback, *args)
-        else:
-            print(ERROR, BOLD + path, "isn't a repository!")
-    else:
-        print(BOLD + repo.working_dir, "(1 repo):")
-        callback(repo, *args)
+        if not os.path.isdir(base):
+            print(ERROR, BOLD + base, "isn't a repository!")
+            return
+        valid = _collect([base])
+
+    base = os.path.abspath(base)
+    suffix = "" if len(valid) == 1 else "s"
+    print(BOLD + base, "({0} repo{1}):".format(len(valid), suffix))
+
+    valid = [os.path.abspath(path) for path in valid]
+    paths = [(_get_basename(base, path), path) for path in valid]
+    for name, path in sorted(paths):
+        callback(Repo(path), name, *args)
 
 def update_bookmarks(bookmarks, update_args):
     """Loop through and update all bookmarks."""
