@@ -1,7 +1,13 @@
 v0.5 (unreleased):
 
-- Improved repository detection when passed a directory that contains repos:
-  will now traverse through subdirectories automatically.
+- Added a `--depth` flag to control recursion depth when searching for
+  repositories inside of subdirectories. For example:
+  - `--depth 0` will never recurse into subdirectories; the provided paths must
+    be repositories by themselves.
+  - `--depth 1` will descend one level to look for repositories. This is the
+    old behavior.
+  - `--depth 3` will look three levels deep. This is the new default.
+  - `--depth -1` will recurse indefinitely. This is not recommended.
 - Fixed an error when updating branches if the upstream is completely unrelated
   from the local branch (no common ancestor).
 
@@ -20,7 +26,7 @@ v0.4 (released January 17, 2017):
 - Cleaned up the bookmark file format, fixing a related Windows bug. The script
   will automatically migrate to the new one.
 - Fixed a bug related to Python 3 compatibility.
-- Fixed unicode support.
+- Fixed Unicode support.
 
 v0.3 (released June 7, 2015):
 

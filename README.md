@@ -1,9 +1,9 @@
 __gitup__ (the _git-repo-updater_)
 
-gitup is a tool designed to update a large number of git repositories at once.
-It is smart enough to handle multiple remotes, branches, dirty working
-directories, and more, hopefully providing a great way to get everything
-up-to-date for short periods of internet access between long periods of none.
+gitup is a tool for updating multiple git repositories at once. It is smart
+enough to handle several remotes, dirty working directories, diverged local
+branches, detached HEADs, and more. It was originally created to manage a large
+collection of projects and deal with sporadic internet access.
 
 gitup should work on OS X, Linux, and Windows. You should have the latest
 version of git and either Python 2.7 or Python 3 installed.
@@ -25,7 +25,7 @@ Then, to install for everyone:
 
     sudo python setup.py install
 
-...or for just yourself (make sure you have `~/.local/bin` in your PATH):
+or for just yourself (make sure you have `~/.local/bin` in your PATH):
 
     python setup.py install --user
 
@@ -51,10 +51,9 @@ Additionally, you can just type:
 
     gitup ~/repos
 
-to automatically update all git repositories in that directory and its
-subdirectories.
+to automatically update all git repositories in that directory.
 
-To add a bookmark (or bookmarks), either of these will work:
+To add bookmarks, either of these will work:
 
     gitup --add ~/repos/foo ~/repos/bar ~/repos/baz
     gitup --add ~/repos
@@ -82,6 +81,13 @@ Update all git repositories in your current directory:
 
     gitup .
 
+You can control how deep gitup will look for repositories in a given directory,
+if that directory is not a git repo by itself, with the `--depth` (or `-t`)
+option. `--depth 0` will disable recursion entirely, meaning the provided paths
+must be repos by themselves. `--depth 1` will descend one level (this is the
+old behavior from pre-0.5 gitup). `--depth -1` will recurse indefinitely,
+which is not recommended. The default is `--depth 3`.
+
 By default, gitup will fetch all remotes in a repository. Pass `--current-only`
 (or `-c`) to make it fetch only the remote tracked by the current branch.
 
@@ -97,6 +103,3 @@ upstream. Pass `--prune` (or `-p`) to delete them, or set `fetch.prune` or
 For a full list of all command arguments and abbreviations:
 
     gitup --help
-
-Finally, all paths can be either absolute (e.g. `/path/to/repo`) or relative
-(e.g. `../my/repo`).
