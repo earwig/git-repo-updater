@@ -1,12 +1,13 @@
 # -*- coding: utf-8  -*-
 #
-# Copyright (C) 2011-2016 Ben Kurtovic <ben.kurtovic@gmail.com>
+# Copyright (C) 2011-2018 Ben Kurtovic <ben.kurtovic@gmail.com>
 # Released under the terms of the MIT License. See LICENSE for details.
 
 from __future__ import print_function
 
 import argparse
 import os
+import platform
 import sys
 
 from colorama import init as color_init, Fore, Style
@@ -39,11 +40,15 @@ def main():
 
     group_u.add_argument(
         'directories_to_update', nargs="*", metavar="path", type=_decode,
-        help="""update all repositories in this directory (or the directory
-                itself, if it is a repo)""")
+        help="""update this repository, or all repositories it contains
+        (if not a repo directly)""")
     group_u.add_argument(
         '-u', '--update', action="store_true", help="""update all bookmarks
         (default behavior when called without arguments)""")
+    group_u.add_argument(
+        '-t', '--depth', dest="max_depth", metavar="n", type=int, default=3,
+        help="""max recursion depth when searching for repos in subdirectories
+        (default: 3; use 0 for no recursion, or -1 for unlimited)""")
     group_u.add_argument(
         '-c', '--current-only', action="store_true", help="""only fetch the
         remote tracked by the current branch instead of all remotes""")
@@ -80,7 +85,8 @@ def main():
         '-h', '--help', action="help", help="show this help message and exit")
     group_m.add_argument(
         '-v', '--version', action="version",
-        version="gitup " + __version__)
+        version="gitup {0} (Python {1})".format(
+            __version__, platform.python_version()))
 
     # TODO: deprecated arguments, for removal in v1.0:
     parser.add_argument(
@@ -90,7 +96,6 @@ def main():
 
     color_init(autoreset=True)
     args = parser.parse_args()
-    update_args = args.current_only, args.fetch_only, args.prune
 
     print(Style.BRIGHT + "gitup" + Style.RESET_ALL + ": the git-repo-updater")
     print()
@@ -121,15 +126,15 @@ def main():
 
     if args.command:
         if args.directories_to_update:
-            run_command(args.directories_to_update, args.command)
+            run_command(args.directories_to_update, args)
         if args.update or not args.directories_to_update:
-            run_command(get_bookmarks(args.bookmark_file), args.command)
+            run_command(get_bookmarks(args.bookmark_file), args)
     else:
         if args.directories_to_update:
-            update_directories(args.directories_to_update, update_args)
+            update_directories(args.directories_to_update, args)
             acted = True
         if args.update or not acted:
-            update_bookmarks(get_bookmarks(args.bookmark_file), update_args)
+            update_bookmarks(get_bookmarks(args.bookmark_file), args)
 
 def run():
     """Thin wrapper for main() that catches KeyboardInterrupts."""
