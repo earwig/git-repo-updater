@@ -1,4 +1,4 @@
-v0.5 (unreleased):
+v0.5 (released August 28, 2018):
 
 - Added a `--depth` flag to control recursion depth when searching for
   repositories inside of subdirectories. For example:
