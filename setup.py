@@ -25,6 +25,7 @@ setup(
     author_email = "ben.kurtovic@gmail.com",
     description = "Easily update multiple git repositories at once",
     long_description = long_desc,
+    long_description_content_type = "text/markdown",
     license = "MIT License",
     keywords = "git repository pull update",
     url = "https://github.com/earwig/git-repo-updater",

@@ -10,6 +10,10 @@ version of git and either Python 2.7 or Python 3 installed.
 
 # Installation
 
+With [pip](https://github.com/pypa/pip/):
+
+    pip install gitup
+
 With [Homebrew](http://brew.sh/):
 
     brew install gitup
