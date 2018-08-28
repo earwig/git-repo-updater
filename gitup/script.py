@@ -7,6 +7,7 @@ from __future__ import print_function
 
 import argparse
 import os
+import platform
 import sys
 
 from colorama import init as color_init, Fore, Style
@@ -84,7 +85,8 @@ def main():
         '-h', '--help', action="help", help="show this help message and exit")
     group_m.add_argument(
         '-v', '--version', action="version",
-        version="gitup " + __version__)
+        version="gitup {0} (Python {1})".format(
+            __version__, platform.python_version()))
 
     # TODO: deprecated arguments, for removal in v1.0:
     parser.add_argument(

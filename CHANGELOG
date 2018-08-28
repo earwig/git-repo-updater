@@ -8,8 +8,10 @@ v0.5 (unreleased):
     old behavior.
   - `--depth 3` will look three levels deep. This is the new default.
   - `--depth -1` will recurse indefinitely. This is not recommended.
+- Allow gitup to be run directly as a Python module (python -m gitup).
 - Fixed an error when updating branches if the upstream is completely unrelated
   from the local branch (no common ancestor).
+- Fixed error message when fetching from a remote fails.
 
 v0.4.1 (released December 13, 2017):
 

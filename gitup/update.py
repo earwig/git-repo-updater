@@ -7,6 +7,8 @@ from __future__ import print_function
 
 from glob import glob
 import os
+import pipes
+import re
 import shlex
 
 from colorama import Fore, Style
@@ -77,8 +79,14 @@ def _fetch_remotes(remotes, prune):
         try:
             results = remote.fetch(progress=_ProgressMonitor(), prune=prune)
         except exc.GitCommandError as err:
-            msg = err.command[0].replace("Error when fetching: ", "")
-            if not msg.endswith("."):
+            # We should have to do this ourselves, but GitPython doesn't give
+            # us a sensible way to get the raw stderr...
+            msg = re.sub(r"\s+", " ", err.stderr).strip()
+            msg = re.sub(r"^stderr: *'(fatal: *)?", "", msg).strip("'")
+            if not msg:
+                command = " ".join(pipes.quote(arg) for arg in err.command)
+                msg = "{0} failed with status {1}.".format(command, err.status)
+            elif not msg.endswith("."):
                 msg += "."
             print(":", RED + "error:", msg)
             return
