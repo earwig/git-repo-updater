@@ -1,6 +1,8 @@
 v0.6 (unreleased):
 
-- ...
+- Add an integrated pytest testing suite, runnable with `--selftest`.
+- Refactor internals, remove deprecated options, and drop support for
+  end-of-life Python versions.
 
 v0.5 (released August 28, 2018):
 

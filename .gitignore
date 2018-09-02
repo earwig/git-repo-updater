@@ -2,6 +2,8 @@
 *.egg
 *.egg-info
 .DS_Store
-__pycache__
-build
-dist
+Pipfile.lock
+__pycache__/
+.pytest_cache/
+build/
+dist/

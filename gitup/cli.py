@@ -10,12 +10,12 @@ import os
 import platform
 import sys
 
-from colorama import init as color_init, Fore, Style
+from colorama import init as color_init, Style
 
-from . import __version__
-from .config import (get_default_config_path, get_bookmarks, add_bookmarks,
-                     delete_bookmarks, list_bookmarks, clean_bookmarks)
-from .update import update_bookmarks, update_directories, run_command
+from gitup import __version__
+from gitup.config import (get_default_config_path, get_bookmarks, add_bookmarks,
+                          delete_bookmarks, list_bookmarks, clean_bookmarks)
+from gitup.update import update_bookmarks, update_directories, run_command
 
 def _decode(path):
     """Decode the given string using the system's filesystem encoding."""
@@ -23,8 +23,8 @@ def _decode(path):
         return path
     return path.decode(sys.getfilesystemencoding())
 
-def main():
-    """Parse arguments and then call the appropriate function(s)."""
+def _build_parser():
+    """Build and return the argument parser."""
     parser = argparse.ArgumentParser(
         description="Easily update multiple git repositories at once.",
         epilog="""
@@ -87,25 +87,29 @@ def main():
         '-v', '--version', action="version",
         version="gitup {0} (Python {1})".format(
             __version__, platform.python_version()))
+    group_m.add_argument(
+        '--selftest', action="store_true",
+        help="run integrated test suite and exit (pytest must be available)")
 
-    # TODO: deprecated arguments, for removal in v1.0:
-    parser.add_argument(
-        '-m', '--merge', action="store_true", help=argparse.SUPPRESS)
-    parser.add_argument(
-        '-r', '--rebase', action="store_true", help=argparse.SUPPRESS)
+    return parser
 
+def _selftest():
+    """Run the integrated test suite with pytest."""
+    from .test import run_tests
+    run_tests()
+
+def main():
+    """Parse arguments and then call the appropriate function(s)."""
+    parser = _build_parser()
     color_init(autoreset=True)
     args = parser.parse_args()
 
     print(Style.BRIGHT + "gitup" + Style.RESET_ALL + ": the git-repo-updater")
     print()
 
-    # TODO: remove in v1.0
-    if args.merge or args.rebase:
-        print(Style.BRIGHT + Fore.YELLOW + "Warning:", "--merge and --rebase "
-              "are deprecated. Branches are only updated if they\ntrack an "
-              "upstream branch and can be safely fast-forwarded. Use "
-              "--fetch-only to\navoid updating any branches.\n")
+    if args.selftest:
+        _selftest()
+        return
 
     if args.bookmark_file:
         args.bookmark_file = os.path.expanduser(args.bookmark_file)

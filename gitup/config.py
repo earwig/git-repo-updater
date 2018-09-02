@@ -1,6 +1,6 @@
 # -*- coding: utf-8  -*-
 #
-# Copyright (C) 2011-2016 Ben Kurtovic <ben.kurtovic@gmail.com>
+# Copyright (C) 2011-2018 Ben Kurtovic <ben.kurtovic@gmail.com>
 # Released under the terms of the MIT License. See LICENSE for details.
 
 from __future__ import print_function
@@ -10,7 +10,7 @@ import os
 
 from colorama import Fore, Style
 
-from .migrate import run_migrations
+from gitup.migrate import run_migrations
 
 __all__ = ["get_default_config_path", "get_bookmarks", "add_bookmarks",
            "delete_bookmarks", "list_bookmarks", "clean_bookmarks"]

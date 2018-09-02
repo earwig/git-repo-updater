@@ -5,7 +5,7 @@ enough to handle several remotes, dirty working directories, diverged local
 branches, detached HEADs, and more. It was originally created to manage a large
 collection of projects and deal with sporadic internet access.
 
-gitup should work on OS X, Linux, and Windows. You should have the latest
+gitup should work on macOS, Linux, and Windows. You should have the latest
 version of git and either Python 2.7 or Python 3 installed.
 
 # Installation
