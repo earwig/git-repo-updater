@@ -37,26 +37,7 @@ def _load_config_file(config_path=None):
     except IOError:
         return []
     paths = [path.decode("utf8").strip() for path in paths]
-    paths = _strip_comment_lines(paths)
     return [path for path in paths if path]
-
-def _strip_comment_lines(paths):
-    """Remove any lines starting with #."""
-    i = 0
-    while i < len(paths):
-        path = paths[i]
-        removed_comment = False
-        for j in range(0, len(path)):
-            path_char = path[j]
-            if path_char == " ":
-                continue
-            if path_char == "#":
-                removed_comment = True
-                paths.pop(i)
-                break
-        if removed_comment is False:
-            i = i + 1
-    return paths
 
 def _save_config_file(bookmarks, config_path=None):
     """Save the bookmarks list to the given config file."""

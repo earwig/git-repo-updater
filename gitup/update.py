@@ -21,6 +21,7 @@ BOLD = Style.BRIGHT
 BLUE = Fore.BLUE + BOLD
 GREEN = Fore.GREEN + BOLD
 RED = Fore.RED + BOLD
+CYAN = Fore.CYAN + BOLD
 YELLOW = Fore.YELLOW + BOLD
 RESET = Style.RESET_ALL
 
@@ -256,11 +257,17 @@ def _dispatch(base_path, callback, args):
         Repo(base)
         valid = [base]
     except exc.NoSuchPathError:
-        paths = glob(base)
-        if not paths:
-            print(ERROR, BOLD + base, "doesn't exist!")
+        if is_comment(base):
+            comment = get_comment(base)
+            if len(comment) > 0:
+                print(CYAN + BOLD + comment)
             return
-        valid = _collect(paths, max_depth)
+        else:
+            paths = glob(base)
+            if not paths:
+                print(ERROR, BOLD + base, "doesn't exist!")
+                return
+            valid = _collect(paths, max_depth)
     except exc.InvalidGitRepositoryError:
         if not os.path.isdir(base) or args.max_depth == 0:
             print(ERROR, BOLD + base, "isn't a repository!")
@@ -275,6 +282,27 @@ def _dispatch(base_path, callback, args):
     paths = [(_get_basename(base, path), path) for path in valid]
     for name, path in sorted(paths):
         callback(Repo(path), name, args)
+
+def is_comment(path):
+    """Does the line start with a # symbol?"""
+    cs = path.lstrip()
+    if cs[0] == "#":
+        return True
+    return False
+
+def get_comment(path):
+    """Return the string minus the comment symbol."""
+    rs = ""
+    cs = path.lstrip()
+    if len(cs) > 0:
+        for j in range(0, len(cs)):
+            c = cs[j]
+            if c == "#" and len(rs) == 0:
+                continue
+            rs = rs + c
+        if len(rs) > 0:
+            rs = rs.lstrip()
+    return rs
 
 def update_bookmarks(bookmarks, args):
     """Loop through and update all bookmarks."""
