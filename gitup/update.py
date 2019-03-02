@@ -259,15 +259,14 @@ def _dispatch(base_path, callback, args):
     except exc.NoSuchPathError:
         if is_comment(base):
             comment = get_comment(base)
-            if len(comment) > 0:
+            if comment:
                 print(CYAN + BOLD + comment)
             return
-        else:
-            paths = glob(base)
-            if not paths:
-                print(ERROR, BOLD + base, "doesn't exist!")
-                return
-            valid = _collect(paths, max_depth)
+        paths = glob(base)
+        if not paths:
+            print(ERROR, BOLD + base, "doesn't exist!")
+            return
+        valid = _collect(paths, max_depth)
     except exc.InvalidGitRepositoryError:
         if not os.path.isdir(base) or args.max_depth == 0:
             print(ERROR, BOLD + base, "isn't a repository!")
@@ -285,24 +284,11 @@ def _dispatch(base_path, callback, args):
 
 def is_comment(path):
     """Does the line start with a # symbol?"""
-    cs = path.lstrip()
-    if cs[0] == "#":
-        return True
-    return False
+    return path.lstrip().startswith("#")
 
 def get_comment(path):
     """Return the string minus the comment symbol."""
-    rs = ""
-    cs = path.lstrip()
-    if len(cs) > 0:
-        for j in range(0, len(cs)):
-            c = cs[j]
-            if c == "#" and len(rs) == 0:
-                continue
-            rs = rs + c
-        if len(rs) > 0:
-            rs = rs.lstrip()
-    return rs
+    return path.lstrip().lstrip("#").strip()
 
 def update_bookmarks(bookmarks, args):
     """Loop through and update all bookmarks."""

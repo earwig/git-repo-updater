@@ -1,5 +1,6 @@
 v0.6 (unreleased):
 
+- Support simple comments in the bookmarks file. (#51)
 - Add an integrated pytest testing suite, runnable with `--selftest`.
 - Refactor internals, remove deprecated options, and drop support for
   end-of-life Python versions.
