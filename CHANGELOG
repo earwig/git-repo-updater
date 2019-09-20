@@ -1,4 +1,4 @@
-v0.6 (unreleased):
+v0.5.1 (released September 20, 2019):
 
 - Support simple comments in the bookmarks file. (#51)
 - Add an integrated pytest testing suite, runnable with `--selftest`.
