@@ -1,5 +1,7 @@
 __gitup__ (the _git-repo-updater_)
 
+[![ci](https://github.com/earwig/git-repo-updater/actions/workflows/ci.yml/badge.svg)](https://github.com/earwig/git-repo-updater/actions/workflows/ci.yml)
+
 gitup is a tool for updating multiple git repositories at once. It is smart
 enough to handle several remotes, dirty working directories, diverged local
 branches, detached HEADs, and more. It was originally created to manage a large
