@@ -14,7 +14,7 @@ GitPython = ">= 2.1.8"
 colorama = ">= 0.3.9"
 
 [requires]
-python_version = "3.7"
+python_version = "3"
 
 [scripts]
 test = "pytest gitup -v -rxw"
