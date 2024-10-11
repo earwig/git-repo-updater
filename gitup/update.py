@@ -7,7 +7,6 @@ from __future__ import print_function
 
 from glob import glob
 import os
-import pipes
 import re
 import shlex
 
@@ -85,7 +84,7 @@ def _fetch_remotes(remotes, prune):
             msg = re.sub(r"\s+", " ", err.stderr).strip()
             msg = re.sub(r"^stderr: *'(fatal: *)?", "", msg).strip("'")
             if not msg:
-                command = " ".join(pipes.quote(arg) for arg in err.command)
+                command = " ".join(shlex.quote(arg) for arg in err.command)
                 msg = "{0} failed with status {1}.".format(command, err.status)
             elif not msg.endswith("."):
                 msg += "."
