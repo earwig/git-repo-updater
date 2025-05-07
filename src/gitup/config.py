@@ -3,8 +3,6 @@
 # Copyright (C) 2011-2018 Ben Kurtovic <ben.kurtovic@gmail.com>
 # Released under the terms of the MIT License. See LICENSE for details.
 
-from __future__ import print_function
-
 from glob import glob
 import os
 

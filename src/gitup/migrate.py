@@ -5,12 +5,7 @@
 
 import os
 
-try:
-    from configparser import ConfigParser, NoSectionError
-    PY3K = True
-except ImportError:  # Python 2
-    from ConfigParser import SafeConfigParser as ConfigParser, NoSectionError
-    PY3K = False
+from configparser import ConfigParser, NoSectionError
 
 __all__ = ["run_migrations"]
 
@@ -37,16 +32,14 @@ def _migrate_old_format():
     if not os.path.exists(old_path):
         return
 
-    config = ConfigParser(delimiters="=") if PY3K else ConfigParser()
+    config = ConfigParser(delimiters="=")
     config.optionxform = lambda opt: opt
     config.read(old_path)
 
     try:
-        bookmarks = [path for path, _ in config.items("bookmarks")]
+        bookmarks = [path.encode("utf8") for path, _ in config.items("bookmarks")]
     except NoSectionError:
         bookmarks = []
-    if PY3K:
-        bookmarks = [path.encode("utf8") for path in bookmarks]
 
     new_path = os.path.join(os.path.split(old_path)[0], "bookmarks")
     os.rename(old_path, new_path)
