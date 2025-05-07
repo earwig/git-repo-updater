@@ -3,12 +3,9 @@
 # Copyright (C) 2011-2018 Ben Kurtovic <ben.kurtovic@gmail.com>
 # Released under the terms of the MIT License. See LICENSE for details.
 
-from __future__ import print_function
-
 import argparse
 import os
 import platform
-import sys
 
 from colorama import init as color_init, Style
 
@@ -17,11 +14,6 @@ from gitup.config import (get_default_config_path, get_bookmarks, add_bookmarks,
                           delete_bookmarks, list_bookmarks, clean_bookmarks)
 from gitup.update import update_bookmarks, update_directories, run_command
 
-def _decode(path):
-    """Decode the given string using the system's filesystem encoding."""
-    if sys.version_info.major > 2:
-        return path
-    return path.decode(sys.getfilesystemencoding())
 
 def _build_parser():
     """Build and return the argument parser."""
@@ -39,7 +31,7 @@ def _build_parser():
     group_m = parser.add_argument_group("miscellaneous")
 
     group_u.add_argument(
-        'directories_to_update', nargs="*", metavar="path", type=_decode,
+        'directories_to_update', nargs="*", metavar="path",
         help="""update this repository, or all repositories it contains
         (if not a repo directly)""")
     group_u.add_argument(
@@ -60,11 +52,9 @@ def _build_parser():
         remote-tracking branches that no longer exist on their remote""")
 
     group_b.add_argument(
-        '-a', '--add', dest="bookmarks_to_add", nargs="+", metavar="path",
-        type=_decode, help="add directory(s) as bookmarks")
+        '-a', '--add', dest="bookmarks_to_add", nargs="+", metavar="path", help="add directory(s) as bookmarks")
     group_b.add_argument(
         '-d', '--delete', dest="bookmarks_to_del", nargs="+", metavar="path",
-        type=_decode,
         help="delete bookmark(s) (leaves actual directories alone)")
     group_b.add_argument(
         '-l', '--list', dest="list_bookmarks", action="store_true",
@@ -73,7 +63,7 @@ def _build_parser():
         '-n', '--clean', '--cleanup', dest="clean_bookmarks",
         action="store_true", help="delete any bookmarks that don't exist")
     group_b.add_argument(
-        '-b', '--bookmark-file', nargs="?", metavar="path", type=_decode,
+        '-b', '--bookmark-file', nargs="?", metavar="path",
         help="use a specific bookmark config file (default: {0})".format(
             get_default_config_path()))
 

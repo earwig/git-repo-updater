@@ -2,9 +2,7 @@
 #
 # Copyright (C) 2011-2018 Ben Kurtovic <ben.kurtovic@gmail.com>
 # Released under the terms of the MIT License. See LICENSE for details.
-
-from __future__ import print_function
-
+import logging
 from glob import glob
 import os
 import re
@@ -13,6 +11,8 @@ import shlex
 from colorama import Fore, Style
 from git import RemoteReference as RemoteRef, Repo, exc
 from git.util import RemoteProgress
+
+logger = logging.getLogger(__name__)
 
 __all__ = ["update_bookmarks", "update_directories", "run_command"]
 
@@ -126,6 +126,7 @@ def _update_branch(repo, branch, is_active=False):
     try:
         base = repo.git.merge_base(branch.commit, upstream.commit)
     except exc.GitCommandError as err:
+        logger.debug(err)
         print(YELLOW + "skipped:", "can't find merge base with upstream.")
         return
 
