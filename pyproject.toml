@@ -37,7 +37,7 @@ classifiers = [
 [project.urls]
 Repository = "https://github.com/earwig/git-repo-updater"
 Issues = "https://github.com/earwig/git-repo-updater/issues"
-Changelog = "https://github.com/earwig/git-repo-updater/blob/master/CHANGELOG"
+Changelog = "https://github.com/earwig/git-repo-updater/blob/main/CHANGELOG"
 
 [project.scripts]
 gitup = "gitup.cli:run"
