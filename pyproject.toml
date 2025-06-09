@@ -1,0 +1,52 @@
+[project]
+name = "gitup"
+version = "0.5.2"
+description = "Easily update multiple git repositories at once"
+authors = [
+  {name = "Ben Kurtovic", email = "ben@benkurtovic.com"},
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+keywords = ["git", "repository", "pull", "update"]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "GitPython >= 3.1.1",
+  "colorama >= 0.4.6",
+]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Natural Language :: English",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: POSIX",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Version Control :: Git"
+]
+
+[project.urls]
+Repository = "https://github.com/earwig/git-repo-updater"
+Issues = "https://github.com/earwig/git-repo-updater/issues"
+Changelog = "https://github.com/earwig/git-repo-updater/blob/master/CHANGELOG"
+
+[project.scripts]
+gitup = "gitup.cli:run"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

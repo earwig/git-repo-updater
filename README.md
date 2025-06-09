@@ -7,10 +7,18 @@ enough to handle several remotes, dirty working directories, diverged local
 branches, detached HEADs, and more. It was originally created to manage a large
 collection of projects and deal with sporadic internet access.
 
-gitup should work on macOS, Linux, and Windows. You should have the latest
-version of git and either Python 2.7 or Python 3 installed.
+gitup works on macOS, Linux, and Windows. You should have a recent version of
+git and Python 3.8+ installed.
 
 # Installation
+
+With [uv](https://docs.astral.sh/uv/):
+
+    uv tool install gitup
+
+With [pipx](https://pipx.pypa.io/stable/):
+
+    pipx install gitup
 
 With [pip](https://github.com/pypa/pip/):
 
@@ -19,29 +27,6 @@ With [pip](https://github.com/pypa/pip/):
 With [Homebrew](http://brew.sh/):
 
     brew install gitup
-
-## From source
-
-First:
-
-    git clone git://github.com/earwig/git-repo-updater.git
-    cd git-repo-updater
-
-Then, to install for everyone:
-
-    sudo python setup.py install
-
-or for just yourself (make sure you have `~/.local/bin` in your PATH):
-
-    python setup.py install --user
-
-Finally, simply delete the `git-repo-updater` directory, and you're done!
-
-__Note:__ If you are using Windows, you may wish to add a macro so you can
-invoke gitup in any directory. Note that `C:\python27\` refers to the
-directory where Python is installed:
-
-    DOSKEY gitup=c:\python27\python.exe c:\python27\Scripts\gitup $*
 
 # Usage
 
