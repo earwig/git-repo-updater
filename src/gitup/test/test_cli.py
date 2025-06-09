@@ -9,14 +9,15 @@ import sys
 
 from gitup import __version__
 
+
 def run_cli(*args):
     cmd = [sys.executable, "-m", "gitup"] + list(args)
     output = subprocess.check_output(cmd)
     return output.strip().decode("utf8")
 
+
 def test_cli_version():
     """make sure we're using the right version of gitup"""
     output = run_cli("-v")
-    expected = "gitup {} (Python {})".format(
-        __version__, platform.python_version())
+    expected = "gitup {} (Python {})".format(__version__, platform.python_version())
     assert output == expected

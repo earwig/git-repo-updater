@@ -10,19 +10,27 @@ from colorama import Fore, Style
 
 from gitup.migrate import run_migrations
 
-__all__ = ["get_default_config_path", "get_bookmarks", "add_bookmarks",
-           "delete_bookmarks", "list_bookmarks", "clean_bookmarks"]
+__all__ = [
+    "get_default_config_path",
+    "get_bookmarks",
+    "add_bookmarks",
+    "delete_bookmarks",
+    "list_bookmarks",
+    "clean_bookmarks",
+]
 
 YELLOW = Fore.YELLOW + Style.BRIGHT
 RED = Fore.RED + Style.BRIGHT
 
 INDENT1 = " " * 3
 
+
 def _ensure_dirs(path):
     """Ensure the directories within the given pathname exist."""
     dirname = os.path.dirname(path)
     if dirname and not os.path.exists(dirname):  # Race condition, meh...
         os.makedirs(dirname)
+
 
 def _load_config_file(config_path=None):
     """Read the config file and return a list of bookmarks."""
@@ -37,6 +45,7 @@ def _load_config_file(config_path=None):
     paths = [path.decode("utf8").strip() for path in paths]
     return [path for path in paths if path]
 
+
 def _save_config_file(bookmarks, config_path=None):
     """Save the bookmarks list to the given config file."""
     run_migrations()
@@ -47,20 +56,24 @@ def _save_config_file(bookmarks, config_path=None):
     with open(cfg_path, "wb") as config_file:
         config_file.write(dump)
 
+
 def _normalize_path(path):
     """Normalize the given path."""
     if path.startswith("~"):
         return os.path.normcase(os.path.normpath(path))
     return os.path.normcase(os.path.abspath(path))
 
+
 def get_default_config_path():
     """Return the default path to the configuration file."""
     xdg_cfg = os.environ.get("XDG_CONFIG_HOME") or os.path.join("~", ".config")
     return os.path.join(os.path.expanduser(xdg_cfg), "gitup", "bookmarks")
 
+
 def get_bookmarks(config_path=None):
     """Get a list of all bookmarks, or an empty list if there are none."""
     return _load_config_file(config_path)
+
 
 def add_bookmarks(paths, config_path=None):
     """Add a list of paths as bookmarks to the config file."""
@@ -84,6 +97,7 @@ def add_bookmarks(paths, config_path=None):
         print(RED + "Already bookmarked:")
         for path in exists:
             print(INDENT1, path)
+
 
 def delete_bookmarks(paths, config_path=None):
     """Remove a list of paths from the bookmark config file."""
@@ -111,6 +125,7 @@ def delete_bookmarks(paths, config_path=None):
         for path in notmarked:
             print(INDENT1, path)
 
+
 def list_bookmarks(config_path=None):
     """Print all of our current bookmarks."""
     bookmarks = _load_config_file(config_path)
@@ -121,6 +136,7 @@ def list_bookmarks(config_path=None):
     else:
         print("You have no bookmarks to display.")
 
+
 def clean_bookmarks(config_path=None):
     """Delete any bookmarks that don't exist."""
     bookmarks = _load_config_file(config_path)
@@ -128,8 +144,11 @@ def clean_bookmarks(config_path=None):
         print("You have no bookmarks to clean up.")
         return
 
-    delete = [path for path in bookmarks
-              if not (os.path.isdir(path) or glob(os.path.expanduser(path)))]
+    delete = [
+        path
+        for path in bookmarks
+        if not (os.path.isdir(path) or glob(os.path.expanduser(path)))
+    ]
     if not delete:
         print("All of your bookmarks are valid.")
         return

@@ -9,10 +9,12 @@ from configparser import ConfigParser, NoSectionError
 
 __all__ = ["run_migrations"]
 
+
 def _get_old_path():
     """Return the old default path to the configuration file."""
     xdg_cfg = os.environ.get("XDG_CONFIG_HOME") or os.path.join("~", ".config")
     return os.path.join(os.path.expanduser(xdg_cfg), "gitup", "config.ini")
+
 
 def _migrate_old_path():
     """Migrate the old config location (~/.gitup) to the new one."""
@@ -25,6 +27,7 @@ def _migrate_old_path():
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir)
     os.rename(old_path, temp_path)
+
 
 def _migrate_old_format():
     """Migrate the old config file format (.INI) to our custom list format."""
@@ -46,6 +49,7 @@ def _migrate_old_format():
 
     with open(new_path, "wb") as handle:
         handle.write(b"\n".join(bookmarks))
+
 
 def run_migrations():
     """Run any necessary migrations to ensure the config file is up-to-date."""

@@ -5,6 +5,7 @@
 
 from gitup import config
 
+
 def test_empty_list(tmpdir, capsys):
     config_path = tmpdir / "config"
     config.list_bookmarks(config_path)

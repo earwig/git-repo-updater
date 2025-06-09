@@ -28,6 +28,7 @@ INDENT1 = " " * 3
 INDENT2 = " " * 7
 ERROR = RED + "Error:" + RESET
 
+
 class _ProgressMonitor(RemoteProgress):
     """Displays relevant output during the fetching process."""
 
@@ -35,7 +36,7 @@ class _ProgressMonitor(RemoteProgress):
         super(_ProgressMonitor, self).__init__()
         self._started = False
 
-    def update(self, op_code, cur_count, max_count=None, message=''):
+    def update(self, op_code, cur_count, max_count=None, message=""):
         """Called whenever progress changes. Overrides default behavior."""
         if op_code & (self.COMPRESSING | self.RECEIVING):
             cur_count = str(int(cur_count))
@@ -59,14 +60,17 @@ class _ProgressMonitor(RemoteProgress):
 
 def _fetch_remotes(remotes, prune):
     """Fetch a list of remotes, displaying progress info along the way."""
+
     def _get_name(ref):
         """Return the local name of a remote or tag reference."""
         return ref.remote_head if isinstance(ref, RemoteRef) else ref.name
 
     # TODO: missing branch deleted (via --prune):
-    info = [("NEW_HEAD", "new branch", "new branches"),
-            ("NEW_TAG", "new tag", "new tags"),
-            ("FAST_FORWARD", "branch update", "branch updates")]
+    info = [
+        ("NEW_HEAD", "new branch", "new branches"),
+        ("NEW_TAG", "new tag", "new tags"),
+        ("FAST_FORWARD", "branch update", "branch updates"),
+    ]
     up_to_date = BLUE + "up to date" + RESET
 
     for remote in remotes:
@@ -92,18 +96,24 @@ def _fetch_remotes(remotes, prune):
             return
         except AssertionError:  # Seems to be the result of a bug in GitPython
             # This happens when git initiates an auto-gc during fetch:
-            print(":", RED + "error:", "something went wrong in GitPython,",
-                  "but the fetch might have been successful.")
+            print(
+                ":",
+                RED + "error:",
+                "something went wrong in GitPython,",
+                "but the fetch might have been successful.",
+            )
             return
         rlist = []
         for attr, singular, plural in info:
-            names = [_get_name(res.ref)
-                     for res in results if res.flags & getattr(res, attr)]
+            names = [
+                _get_name(res.ref) for res in results if res.flags & getattr(res, attr)
+            ]
             if names:
                 desc = singular if len(names) == 1 else plural
                 colored = GREEN + desc + RESET
                 rlist.append("{0} ({1})".format(colored, ", ".join(names)))
         print(":", (", ".join(rlist) if rlist else up_to_date) + ".")
+
 
 def _update_branch(repo, branch, is_active=False):
     """Update a single branch."""
@@ -146,13 +156,18 @@ def _update_branch(repo, branch, is_active=False):
                 print(YELLOW + "skipped:", "not possible to fast-forward.")
     else:
         status = repo.git.merge_base(
-            branch.commit, upstream.commit, is_ancestor=True,
-            with_extended_output=True, with_exceptions=False)[0]
+            branch.commit,
+            upstream.commit,
+            is_ancestor=True,
+            with_extended_output=True,
+            with_exceptions=False,
+        )[0]
         if status != 0:
             print(YELLOW + "skipped:", "not possible to fast-forward.")
         else:
             repo.git.branch(branch.name, upstream.name, force=True)
             print(GREEN + "done", end=".\n")
+
 
 def _update_repository(repo, repo_name, args):
     """Update a single git repository by fetching remotes and rebasing/merging.
@@ -172,8 +187,11 @@ def _update_repository(repo, repo_name, args):
         active = None
     if args.current_only:
         if not active:
-            print(INDENT2, ERROR,
-                  "--current-only doesn't make sense with a detached HEAD.")
+            print(
+                INDENT2,
+                ERROR,
+                "--current-only doesn't make sense with a detached HEAD.",
+            )
             return
         ref = active.tracking_branch()
         if not ref:
@@ -192,20 +210,21 @@ def _update_repository(repo, repo_name, args):
         for branch in sorted(repo.heads, key=lambda b: b.name):
             _update_branch(repo, branch, branch == active)
 
+
 def _run_command(repo, repo_name, args):
     """Run an arbitrary shell command on the given repository."""
     print(INDENT1, BOLD + repo_name + ":")
 
     cmd = shlex.split(args.command)
     try:
-        out = repo.git.execute(
-            cmd, with_extended_output=True, with_exceptions=False)
+        out = repo.git.execute(cmd, with_extended_output=True, with_exceptions=False)
     except exc.GitCommandNotFound as err:
         print(INDENT2, ERROR, err)
         return
 
     for line in out[1].splitlines() + out[2].splitlines():
         print(INDENT2, line)
+
 
 def _dispatch(base_path, callback, args):
     """Apply a callback function on each valid repo in the given path.
@@ -217,6 +236,7 @@ def _dispatch(base_path, callback, args):
 
     The given args are passed directly to the callback function after the repo.
     """
+
     def _collect(paths, max_depth):
         """Return all valid repo paths in the given paths, recursively."""
         if max_depth == 0:
@@ -282,13 +302,16 @@ def _dispatch(base_path, callback, args):
     for name, path in sorted(paths):
         callback(Repo(path), name, args)
 
+
 def is_comment(path):
     """Does the line start with a # symbol?"""
     return path.lstrip().startswith("#")
 
+
 def get_comment(path):
     """Return the string minus the comment symbol."""
     return path.lstrip().lstrip("#").strip()
+
 
 def update_bookmarks(bookmarks, args):
     """Loop through and update all bookmarks."""
@@ -299,10 +322,12 @@ def update_bookmarks(bookmarks, args):
     for path in bookmarks:
         _dispatch(path, _update_repository, args)
 
+
 def update_directories(paths, args):
     """Update a list of directories supplied by command arguments."""
     for path in paths:
         _dispatch(path, _update_repository, args)
+
 
 def run_command(paths, args):
     """Run an arbitrary shell command on all repos."""

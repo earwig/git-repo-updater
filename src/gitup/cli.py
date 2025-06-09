@@ -10,8 +10,14 @@ import platform
 from colorama import init as color_init, Style
 
 from gitup import __version__
-from gitup.config import (get_default_config_path, get_bookmarks, add_bookmarks,
-                          delete_bookmarks, list_bookmarks, clean_bookmarks)
+from gitup.config import (
+    get_default_config_path,
+    get_bookmarks,
+    add_bookmarks,
+    delete_bookmarks,
+    list_bookmarks,
+    clean_bookmarks,
+)
 from gitup.update import update_bookmarks, update_directories, run_command
 
 
@@ -23,7 +29,8 @@ def _build_parser():
             Both relative and absolute paths are accepted by all arguments.
             Direct bug reports and feature requests to
             https://github.com/earwig/git-repo-updater.""",
-        add_help=False)
+        add_help=False,
+    )
 
     group_u = parser.add_argument_group("updating repositories")
     group_b = parser.add_argument_group("bookmarking")
@@ -31,62 +38,124 @@ def _build_parser():
     group_m = parser.add_argument_group("miscellaneous")
 
     group_u.add_argument(
-        'directories_to_update', nargs="*", metavar="path",
+        "directories_to_update",
+        nargs="*",
+        metavar="path",
         help="""update this repository, or all repositories it contains
-        (if not a repo directly)""")
+        (if not a repo directly)""",
+    )
     group_u.add_argument(
-        '-u', '--update', action="store_true", help="""update all bookmarks
-        (default behavior when called without arguments)""")
+        "-u",
+        "--update",
+        action="store_true",
+        help="""update all bookmarks
+        (default behavior when called without arguments)""",
+    )
     group_u.add_argument(
-        '-t', '--depth', dest="max_depth", metavar="n", type=int, default=3,
+        "-t",
+        "--depth",
+        dest="max_depth",
+        metavar="n",
+        type=int,
+        default=3,
         help="""max recursion depth when searching for repos in subdirectories
-        (default: 3; use 0 for no recursion, or -1 for unlimited)""")
+        (default: 3; use 0 for no recursion, or -1 for unlimited)""",
+    )
     group_u.add_argument(
-        '-c', '--current-only', action="store_true", help="""only fetch the
-        remote tracked by the current branch instead of all remotes""")
+        "-c",
+        "--current-only",
+        action="store_true",
+        help="""only fetch the
+        remote tracked by the current branch instead of all remotes""",
+    )
     group_u.add_argument(
-        '-f', '--fetch-only', action="store_true",
-        help="only fetch remotes, don't try to fast-forward any branches")
+        "-f",
+        "--fetch-only",
+        action="store_true",
+        help="only fetch remotes, don't try to fast-forward any branches",
+    )
     group_u.add_argument(
-        '-p', '--prune', action="store_true", help="""after fetching, delete
-        remote-tracking branches that no longer exist on their remote""")
+        "-p",
+        "--prune",
+        action="store_true",
+        help="""after fetching, delete
+        remote-tracking branches that no longer exist on their remote""",
+    )
 
     group_b.add_argument(
-        '-a', '--add', dest="bookmarks_to_add", nargs="+", metavar="path", help="add directory(s) as bookmarks")
+        "-a",
+        "--add",
+        dest="bookmarks_to_add",
+        nargs="+",
+        metavar="path",
+        help="add directory(s) as bookmarks",
+    )
     group_b.add_argument(
-        '-d', '--delete', dest="bookmarks_to_del", nargs="+", metavar="path",
-        help="delete bookmark(s) (leaves actual directories alone)")
+        "-d",
+        "--delete",
+        dest="bookmarks_to_del",
+        nargs="+",
+        metavar="path",
+        help="delete bookmark(s) (leaves actual directories alone)",
+    )
     group_b.add_argument(
-        '-l', '--list', dest="list_bookmarks", action="store_true",
-        help="list current bookmarks")
+        "-l",
+        "--list",
+        dest="list_bookmarks",
+        action="store_true",
+        help="list current bookmarks",
+    )
     group_b.add_argument(
-        '-n', '--clean', '--cleanup', dest="clean_bookmarks",
-        action="store_true", help="delete any bookmarks that don't exist")
+        "-n",
+        "--clean",
+        "--cleanup",
+        dest="clean_bookmarks",
+        action="store_true",
+        help="delete any bookmarks that don't exist",
+    )
     group_b.add_argument(
-        '-b', '--bookmark-file', nargs="?", metavar="path",
+        "-b",
+        "--bookmark-file",
+        nargs="?",
+        metavar="path",
         help="use a specific bookmark config file (default: {0})".format(
-            get_default_config_path()))
+            get_default_config_path()
+        ),
+    )
 
     group_a.add_argument(
-        '-e', '--exec', '--batch', dest="command", metavar="command",
-        help="run a shell command on all repos")
+        "-e",
+        "--exec",
+        "--batch",
+        dest="command",
+        metavar="command",
+        help="run a shell command on all repos",
+    )
 
     group_m.add_argument(
-        '-h', '--help', action="help", help="show this help message and exit")
+        "-h", "--help", action="help", help="show this help message and exit"
+    )
     group_m.add_argument(
-        '-v', '--version', action="version",
-        version="gitup {0} (Python {1})".format(
-            __version__, platform.python_version()))
+        "-v",
+        "--version",
+        action="version",
+        version="gitup {0} (Python {1})".format(__version__, platform.python_version()),
+    )
     group_m.add_argument(
-        '--selftest', action="store_true",
-        help="run integrated test suite and exit (pytest must be available)")
+        "--selftest",
+        action="store_true",
+        help="run integrated test suite and exit (pytest must be available)",
+    )
 
     return parser
+
 
 def _selftest():
     """Run the integrated test suite with pytest."""
     from .test import run_tests
+
     run_tests()
+
 
 def main():
     """Parse arguments and then call the appropriate function(s)."""
@@ -129,6 +198,7 @@ def main():
             acted = True
         if args.update or not acted:
             update_bookmarks(get_bookmarks(args.bookmark_file), args)
+
 
 def run():
     """Thin wrapper for main() that catches KeyboardInterrupts."""
