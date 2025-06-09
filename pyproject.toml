@@ -1,6 +1,6 @@
 [project]
 name = "gitup"
-version = "0.5.2"
+version = "0.5.3.dev0"
 description = "Easily update multiple git repositories at once"
 authors = [
   {name = "Ben Kurtovic", email = "ben@benkurtovic.com"},
@@ -9,7 +9,7 @@ license = "MIT"
 license-files = ["LICEN[CS]E*"]
 keywords = ["git", "repository", "pull", "update"]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
   "GitPython >= 3.1.1",
   "colorama >= 0.4.6",
@@ -25,7 +25,6 @@ classifiers = [
   "Operating System :: Microsoft :: Windows",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -50,3 +49,11 @@ dev = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.pyright]
+pythonVersion = "3.9"
+venvPath = "."
+venv = ".venv"
+
+[tool.ruff]
+target-version = "py39"
