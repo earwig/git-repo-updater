@@ -11,16 +11,10 @@ jobs:
     name: python-${{ matrix.python }}
     steps:
       - name: Checkout
-        uses: actions/checkout@main
-      - name: Setup python-${{ matrix.python }}
-        uses: actions/setup-python@main
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python }}
-          cache: "pipenv"
-          cache-dependency-path: "Pipfile"
-      - name: Install Dependencies
-        run: |
-          pip install pipenv
-          pipenv install -d
       - name: Test
-        run: pipenv run pytest
+        run: uv run --frozen pytest
