@@ -8,7 +8,7 @@ branches, detached HEADs, and more. It was originally created to manage a large
 collection of projects and deal with sporadic internet access.
 
 gitup works on macOS, Linux, and Windows. You should have a recent version of
-git and Python 3.9+ installed.
+git and Python 3.10+ installed.
 
 # Installation
 
