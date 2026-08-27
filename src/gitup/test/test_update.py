@@ -12,7 +12,12 @@ import pytest
 from git import Repo
 from git.exc import GitCommandError
 
-from gitup.update import _update_branch, _update_repository
+from gitup.update import (
+    _branch_worktrees,
+    _parse_worktree_porcelain,
+    _update_branch,
+    _update_repository,
+)
 
 ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
@@ -164,3 +169,48 @@ def test_later_branches_still_update_when_a_worktree_branch_needs_ff(
     assert "Error" not in out or "no remotes" not in out
     assert repo.heads[tracking_repos.extra].commit.hexsha == expected_extra
     assert _head(tracking_repos.worktree) == expected_wt
+
+
+def test_parse_worktree_porcelain_maps_slash_branches_and_skips_detached():
+    output = """worktree /repo
+HEAD abc123
+branch refs/heads/main
+
+worktree /repo-wt
+HEAD def456
+branch refs/heads/wip/382-eliminate-tautological-expects
+
+worktree /repo-det
+HEAD ghi789
+detached
+"""
+    assert _parse_worktree_porcelain(output) == {
+        "main": "/repo",
+        "wip/382-eliminate-tautological-expects": "/repo-wt",
+    }
+
+
+def test_branch_worktrees_includes_linked_slash_branch(tracking_repos):
+    repo = Repo(os.fspath(tracking_repos.clone))
+    mapping = _branch_worktrees(repo)
+    worktree_path = os.path.realpath(os.fspath(tracking_repos.worktree))
+    assert tracking_repos.branch in mapping
+    assert os.path.realpath(mapping[tracking_repos.branch]) == worktree_path
+
+
+def test_diverged_worktree_is_skipped(tracking_repos, capsys):
+    repo = Repo(os.fspath(tracking_repos.clone))
+    branch = repo.heads[tracking_repos.branch]
+    _write(tracking_repos.worktree / "LOCAL", "worktree-only\n")
+    _git(tracking_repos.worktree, "add", "LOCAL")
+    _git(tracking_repos.worktree, "commit", "-m", "diverge worktree")
+    diverged = _head(tracking_repos.worktree)
+    upstream = repo.remotes.origin.refs[tracking_repos.branch].commit.hexsha
+
+    _update_branch(repo, branch, is_active=False)
+    out = _plain(capsys.readouterr().out)
+
+    assert "skipped" in out
+    assert "not possible to fast-forward" in out
+    assert _head(tracking_repos.worktree) == diverged
+    assert diverged != upstream
