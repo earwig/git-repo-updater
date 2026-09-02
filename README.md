@@ -4,8 +4,8 @@ __gitup__ (the _git-repo-updater_)
 
 gitup is a tool for updating multiple git repositories at once. It is smart
 enough to handle several remotes, dirty working directories, diverged local
-branches, detached HEADs, and more. It was originally created to manage a large
-collection of projects and deal with sporadic internet access.
+branches, detached HEADs, linked worktrees, and more. It was originally created
+to manage a large collection of projects and deal with sporadic internet access.
 
 gitup works on macOS, Linux, and Windows. You should have a recent version of
 git and Python 3.10+ installed.
