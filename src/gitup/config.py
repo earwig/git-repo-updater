@@ -147,7 +147,11 @@ def clean_bookmarks(config_path=None):
     delete = [
         path
         for path in bookmarks
-        if not (os.path.isdir(path) or glob(os.path.expanduser(path)))
+        if not (
+            path.lstrip().startswith("#")
+            or os.path.isdir(path)
+            or glob(os.path.expanduser(path))
+        )
     ]
     if not delete:
         print("All of your bookmarks are valid.")
