@@ -1,3 +1,9 @@
+v0.5.3 (unreleased):
+
+- Fast-forward branches that are checked out in linked worktrees instead of
+  crashing on ``git branch --force``. Dirty or diverged worktrees are skipped,
+  and a failure on one branch no longer aborts the rest of the run.
+
 v0.5.2 (released June 9, 2025):
 
 - Support Python 3.13+.
