@@ -21,3 +21,11 @@ def test_cli_version():
     output = run_cli("-v")
     expected = "gitup {} (Python {})".format(__version__, platform.python_version())
     assert output == expected
+
+
+def test_cli_rejects_depth_below_minus_one():
+    """--depth values below -1 were silently treated as unlimited."""
+    cmd = [sys.executable, "-m", "gitup", "--depth", "-2"]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    assert proc.returncode == 2
+    assert "--depth must be -1 (unlimited) or greater" in proc.stderr
