@@ -85,8 +85,7 @@ def _fetch_remotes(remotes, prune):
         except exc.GitCommandError as err:
             # We should have to do this ourselves, but GitPython doesn't give
             # us a sensible way to get the raw stderr...
-            msg = re.sub(r"\s+", " ", err.stderr).strip()
-            msg = re.sub(r"^stderr: *'(fatal: *)?", "", msg).strip("'")
+            msg = _git_error_text(err)
             if not msg:
                 command = " ".join(shlex.quote(arg) for arg in err.command)
                 msg = "{0} failed with status {1}.".format(command, err.status)
@@ -115,9 +114,111 @@ def _fetch_remotes(remotes, prune):
         print(":", (", ".join(rlist) if rlist else up_to_date) + ".")
 
 
-def _update_branch(repo, branch, is_active=False):
-    """Update a single branch."""
+def _git_error_text(err):
+    """Return a concise message from a GitPython command error."""
+    raw = err.stderr or ""
+    if isinstance(raw, bytes):
+        raw = raw.decode("utf8", errors="replace")
+    msg = re.sub(r"\s+", " ", raw).strip()
+    msg = re.sub(r"^stderr: *'(fatal: *)?", "", msg).strip("'")
+    return msg
+
+
+def _same_path(left, right):
+    """Return whether two filesystem paths refer to the same location."""
+    if not left or not right:
+        return False
+    try:
+        return os.path.samefile(left, right)
+    except OSError:
+        return os.path.normcase(os.path.realpath(left)) == os.path.normcase(
+            os.path.realpath(right)
+        )
+
+
+def _parse_worktree_porcelain(output):
+    """Map local branch names to the worktree path where they are checked out."""
+
+    def attrs_from_entry(entry):
+        attrs = {}
+        for line in entry.splitlines():
+            if not line:
+                continue
+            if " " in line:
+                key, value = line.split(" ", 1)
+                attrs[key] = value
+            else:
+                attrs[line] = True
+        return attrs
+
+    def branch_and_path(attrs):
+        path = attrs.get("worktree")
+        ref = attrs.get("branch")
+        if not path or not isinstance(ref, str):
+            return None
+        name = (
+            ref[len("refs/heads/") :] if ref.startswith("refs/heads/") else ref
+        )
+        return name, path
+
+    normalized = output.replace("\r\n", "\n")
+    pairs = [
+        branch_and_path(attrs_from_entry(entry))
+        for entry in normalized.split("\n\n")
+    ]
+    return dict(pair for pair in pairs if pair)
+
+
+def _branch_worktrees(repo):
+    """Return {branch_name: worktree_path} for checkouts with a branch."""
+    try:
+        # GitPython puts kwargs before subcommands (`worktree --porcelain list`),
+        # which git rejects. Pass --porcelain as a positional argument.
+        output = repo.git.worktree("list", "--porcelain")
+    except exc.GitCommandError:
+        return {}
+    return _parse_worktree_porcelain(output or "")
+
+
+def _repo_for_workdir(repo, worktree_path):
+    """Return a Repo for *worktree_path*, reusing *repo* when it is the same tree."""
+    if repo.working_dir and _same_path(repo.working_dir, worktree_path):
+        return repo
+    return Repo(worktree_path)
+
+
+def _merge_ff_only(repo, upstream_name):
+    """Fast-forward *repo*'s current checkout; print done or skipped."""
+    try:
+        repo.git.merge(upstream_name, ff_only=True)
+        print(GREEN + "done", end=".\n")
+    except exc.GitCommandError as err:
+        msg = _git_error_text(err)
+        if "local changes" in msg and "would be overwritten" in msg:
+            print(YELLOW + "skipped:", "uncommitted changes.")
+        else:
+            print(YELLOW + "skipped:", "not possible to fast-forward.")
+
+
+def _update_branch(repo, branch, is_active=False, worktrees=None):
+    """Update a single branch.
+
+    Branches checked out in this repo or another worktree are fast-forwarded
+    with ``merge --ff-only`` in that checkout. Other tracking branches are
+    moved with ``git branch --force`` when the update is a fast-forward.
+    """
     print(INDENT2, "Updating", BOLD + branch.name, end=": ")
+    try:
+        _update_branch_body(repo, branch, is_active, worktrees)
+    except exc.GitCommandError as err:
+        msg = _git_error_text(err) or "git command failed"
+        if not msg.endswith("."):
+            msg += "."
+        print(YELLOW + "skipped:", msg)
+
+
+def _update_branch_body(repo, branch, is_active, worktrees):
+    """Perform the update for a single branch, printing the result."""
     upstream = branch.tracking_branch()
     if not upstream:
         print(YELLOW + "skipped:", "no upstream is tracked.")
@@ -144,29 +245,31 @@ def _update_branch(repo, branch, is_active=False):
         print(BLUE + "up to date", end=".\n")
         return
 
-    if is_active:
+    if worktrees is None:
+        worktrees = _branch_worktrees(repo)
+    checkout = worktrees.get(branch.name)
+
+    if is_active or checkout:
         try:
-            repo.git.merge(upstream.name, ff_only=True)
-            print(GREEN + "done", end=".\n")
-        except exc.GitCommandError as err:
-            msg = err.stderr
-            if "local changes" in msg and "would be overwritten" in msg:
-                print(YELLOW + "skipped:", "uncommitted changes.")
-            else:
-                print(YELLOW + "skipped:", "not possible to fast-forward.")
-    else:
-        status = repo.git.merge_base(
-            branch.commit,
-            upstream.commit,
-            is_ancestor=True,
-            with_extended_output=True,
-            with_exceptions=False,
-        )[0]
-        if status != 0:
-            print(YELLOW + "skipped:", "not possible to fast-forward.")
-        else:
-            repo.git.branch(branch.name, upstream.name, force=True)
-            print(GREEN + "done", end=".\n")
+            target = _repo_for_workdir(repo, checkout) if checkout else repo
+        except (exc.NoSuchPathError, exc.InvalidGitRepositoryError):
+            print(YELLOW + "skipped:", "worktree path does not exist.")
+            return
+        _merge_ff_only(target, upstream.name)
+        return
+
+    status = repo.git.merge_base(
+        branch.commit,
+        upstream.commit,
+        is_ancestor=True,
+        with_extended_output=True,
+        with_exceptions=False,
+    )[0]
+    if status != 0:
+        print(YELLOW + "skipped:", "not possible to fast-forward.")
+        return
+    repo.git.branch(branch.name, upstream.name, force=True)
+    print(GREEN + "done", end=".\n")
 
 
 def _update_repository(repo, repo_name, args):
@@ -207,8 +310,9 @@ def _update_repository(repo, repo_name, args):
     _fetch_remotes(remotes, args.prune)
 
     if not args.fetch_only:
+        worktrees = _branch_worktrees(repo)
         for branch in sorted(repo.heads, key=lambda b: b.name):
-            _update_branch(repo, branch, branch == active)
+            _update_branch(repo, branch, branch == active, worktrees)
 
 
 def _run_command(repo, repo_name, args):
