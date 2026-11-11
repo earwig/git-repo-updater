@@ -160,8 +160,10 @@ def _selftest():
 def main():
     """Parse arguments and then call the appropriate function(s)."""
     parser = _build_parser()
-    color_init(autoreset=True)
     args = parser.parse_args()
+    if args.max_depth < -1:
+        parser.error("--depth must be -1 (unlimited) or greater")
+    color_init(autoreset=True)
 
     print(Style.BRIGHT + "gitup" + Style.RESET_ALL + ": the git-repo-updater")
     print()
